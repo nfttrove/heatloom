@@ -176,16 +176,42 @@ export function lossBudget(
 // we'd actually bet money on — Heat Loom minus the ORC, plus bought PV.
 // ---------------------------------------------------------------------------
 
-/** DIY PV economics: panels + microinverter, £ per installed kWp. */
-export const PV_GBP_PER_KWP = 400;
+/**
+ * DIY PV economics, GBP per kWp (panels + inverter share + mounting).
+ * Sourced Aug 2026: tier-1 400 W panels GBP 100-130 (~0.25-0.33/W),
+ * Hoymiles-class microinverters GBP 120-160 per 800 W 2-in-1, so
+ * ~GBP 500/kWp real-world DIY; 550 includes mounting and cable. The
+ * old 400 was bargain-hunting, not a plan.
+ * Sources: pluggedin.solar 400W-UK guide; pluggedin.solar microinverter guide.
+ */
+export const PV_GBP_PER_KWP = 550;
 /** UK-ish specific yield, kWh per kWp per year (south, sensible tilt). */
 export const PV_KWH_PER_KWP_YEAR = 950;
 /** PV's December factor (weaker than thermal's 0.3 — diffuse light). */
 export const PV_SEASONAL_WINTER = 0.22;
 export const PV_SEASONAL_SUMMER = 1.9;
-/** Collector parts, £ per m² (tubes or good flat plate). */
+/**
+ * Collector panels, GBP per m2 aperture. Sourced Aug 2026: UK 20-tube
+ * evacuated collectors GBP 400-700 (~2-2.5 m2 => 180-280/m2); 300 keeps
+ * margin. Panels only — the pump station and controller are charged
+ * once, separately (THERMAL_BOP_GBP). Sources: stovesandsolar.com
+ * Navitron kit builder; eBay UK collector listings.
+ */
 export const COLLECTOR_GBP_PER_M2 = 300;
-/** Sand store all-in, £ per kWh-thermal stored (vessel, insulation, exchanger, media). */
+
+/**
+ * Thermal balance of plant, charged once regardless of collector area:
+ * pump station (150-300), controller (200-300), glycol, fittings.
+ * Source: Navitron PRO-KIT 5830 (2,198 complete) decomposed; DIY
+ * component-sourced ~500.
+ */
+export const THERMAL_BOP_GBP = 500;
+/**
+ * Sand store all-in, GBP per kWh-thermal. Sourced Aug 2026 DIY parts:
+ * drum 50-100, rockwool 100 mm 60-100/pack, ceramic fibre hot-face
+ * 50-100, copper coil 50-100 => 6-10/kWh achievable; 15 keeps margin
+ * for the higher-temperature build.
+ */
 export const STORE_GBP_PER_KWH = 15;
 /** The sand itself: builder's sand, ~£45/tonne. */
 export const SAND_MEDIA_GBP_PER_KG = 0.045;
@@ -275,7 +301,7 @@ export function hybridPlan(p: HybridInput): HybridPlan {
   const pvCost = p.pvKwp * PV_GBP_PER_KWP;
   const collectorCost = p.collectorM2 * COLLECTOR_GBP_PER_M2;
   const storeCost = p.storeKWh * STORE_GBP_PER_KWH;
-  const systemCost = pvCost + collectorCost + storeCost;
+  const systemCost = pvCost + collectorCost + storeCost + THERMAL_BOP_GBP;
 
   const annualSavings =
     elAnnual * 365 * ELECTRICITY_GBP_PER_KWH +

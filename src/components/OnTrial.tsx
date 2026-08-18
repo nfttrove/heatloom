@@ -2,6 +2,14 @@ import { Gavel, FileCheck2, ExternalLink } from 'lucide-react';
 
 const CLAIMS = [
   {
+    title: 'Heat Loom Hybrid rev B (sourced 2026 prices, UK)',
+    value: '3,874 kWh/yr household energy, £3,100 system',
+    hash: '1eec59b9…ec8d80',
+    verdict:
+      'Same energy prediction as rev A — the audit changed costs, not physics: real panel/inverter prices (£550/kWp not £400) and the previously-forgotten pump station and controller (£500) raised the starter rig from £2,300 to £3,100 and payback from 3.7 to 5.0 years. Rev A stands below, unedited: that is what pre-registration is for.',
+    status: 'Revised claim — superseding rev A, filed after a web-sourced cost audit',
+  },
+  {
     title: 'Heat Loom Medium Pilot (20 m², DNI 5)',
     value: '450.77 W mean electric',
     hash: '22c8b908…c4b30d3',

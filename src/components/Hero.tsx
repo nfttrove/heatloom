@@ -58,7 +58,7 @@ export default function Hero() {
             <h3 className="text-2xl font-bold text-gray-900 mb-6">The Hybrid</h3>
             <p className="text-gray-600 leading-relaxed text-lg">Collector + sand store for heat, PV for electricity — and we removed our own turbine, with the Carnot arithmetic to show why. Coverage quoted annual <em>and</em> December.</p>
             <div className="mt-6 pt-6 border-t border-orange-100">
-              <div className="text-orange-600 font-bold text-sm">3.7-Year Payback (UK Numbers)</div>
+              <div className="text-orange-600 font-bold text-sm">5.0-Year Payback (UK Numbers)</div>
             </div>
           </div>
 
@@ -99,7 +99,7 @@ export default function Hero() {
                   <div className="w-4 h-4 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full mt-1.5 flex-shrink-0"></div>
                   <div>
                     <h4 className="text-white font-bold text-lg mb-2">Honest Economics</h4>
-                    <p className="text-gray-300 leading-relaxed">£2,300 of parts returning £621 a year in the UK — with winter shortfalls stated up front, not buried in a footnote. The naive numbers are shown too, so you can see the honesty discount.</p>
+                    <p className="text-gray-300 leading-relaxed">£3,100 of parts (real 2026 prices) returning £621 a year in the UK — with winter shortfalls stated up front, not buried in a footnote. The naive numbers are shown too, so you can see the honesty discount.</p>
                   </div>
                 </div>
               </div>

@@ -141,9 +141,9 @@ describe("hybridPlan", () => {
     expect(big.decemberVerdict.serious).toBe(false);
   });
 
-  it("costs are the sum of parts", () => {
+  it("costs are the sum of parts, including one-off thermal balance of plant", () => {
     expect(plan.economics.systemCostGBP).toBeCloseTo(
-      2 * 400 + 3 * 300 + 40 * 15, 6
+      2 * 550 + 3 * 300 + 40 * 15 + 500, 6
     );
   });
 });
@@ -163,7 +163,7 @@ describe("sand store cost decomposition", () => {
     expect(plan.thermal.mediaCostGBP + plan.thermal.vesselCostGBP)
       .toBeCloseTo(plan.thermal.storeCostGBP, 6);
     expect(
-      plan.pv.costGBP + plan.thermal.costGBP + plan.thermal.storeCostGBP
+      plan.pv.costGBP + plan.thermal.costGBP + plan.thermal.storeCostGBP + 500
     ).toBeCloseTo(plan.economics.systemCostGBP, 6);
   });
 });

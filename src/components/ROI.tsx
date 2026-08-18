@@ -1,4 +1,7 @@
 import { DollarSign, TrendingUp, Calculator, Clock } from 'lucide-react';
+import { hybridPlan } from '../utils/heatloom';
+
+const PLAN = hybridPlan({ electricKWhPerDay: 8, heatKWhPerDay: 30, pvKwp: 2, collectorM2: 3, storeKWh: 40, dniAnnual: 3 });
 
 export default function ROI() {
   return (
@@ -21,17 +24,17 @@ export default function ROI() {
               <div className="space-y-4">
                 <div className="bg-white p-4 rounded-lg border-l-4 border-green-600">
                   <h4 className="font-bold text-gray-900 mb-2">System Cost</h4>
-                  <p className="text-3xl font-bold text-green-600">£2,300</p>
-                  <p className="text-gray-600 text-sm">2 kWp PV + 3 m² collector + 40 kWh sand store</p>
+                  <p className="text-3xl font-bold text-green-600">£{PLAN.economics.systemCostGBP.toLocaleString()}</p>
+                  <p className="text-gray-600 text-sm">2 kWp PV + 3 m² collector + 40 kWh sand store + pump/controller (real 2026 prices)</p>
                 </div>
                 <div className="bg-white p-4 rounded-lg border-l-4 border-blue-600">
                   <h4 className="font-bold text-gray-900 mb-2">Annual Savings</h4>
-                  <p className="text-3xl font-bold text-blue-600">£621</p>
+                  <p className="text-3xl font-bold text-blue-600">£{Math.round(PLAN.economics.annualSavingsGBP)}</p>
                   <p className="text-gray-600 text-sm">Coverage-capped: winter days counted at winter output</p>
                 </div>
                 <div className="bg-white p-4 rounded-lg border-l-4 border-orange-600">
                   <h4 className="font-bold text-gray-900 mb-2">Payback Period</h4>
-                  <p className="text-3xl font-bold text-orange-600">3.7 years</p>
+                  <p className="text-3xl font-bold text-orange-600">{PLAN.economics.paybackYears.toFixed(1)} years</p>
                   <p className="text-gray-600 text-sm">Shorter in sunnier sites; the naive number is shown below, unearned</p>
                 </div>
               </div>
