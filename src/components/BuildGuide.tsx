@@ -58,7 +58,7 @@ export default function BuildGuide() {
           <p className="text-2xl text-gray-600 max-w-4xl mx-auto font-light">
             Complete step-by-step guide to a research-grade thermal rig. Two build paths exist:
             this one (silvered-glass troughs, evacuated receivers, ~£7,900) and the commodity
-            Hybrid path from the configurator (~£3,100 at sourced 2026 prices). Both end
+            Hybrid path from the configurator (~£2,300 using bought collectors and PV). Both end
             in the same sand store — the part that matters.
           </p>
           <div className="mt-8 inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 rounded-2xl border border-orange-200/50">
