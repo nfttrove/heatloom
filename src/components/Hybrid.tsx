@@ -173,8 +173,8 @@ export default function Hybrid() {
                 </table>
               </div>
               <p className="text-gray-500 text-xs mt-4">
-                The December column is the honesty column: no UK rig retires your boiler. The £2,300 starter is a
-                toe in the water; the £6,100 tier is the one we'd actually recommend; the £9,850 tier buys the
+                The December column is the honesty column: no UK rig retires your boiler. The £3,100 starter is a
+                toe in the water; the £7,200 tier is the one we'd actually recommend; the £10,950 tier buys the
                 boiler's summer holidays. All three keep the grid.
               </p>
             </div>
@@ -187,6 +187,7 @@ export default function Hybrid() {
               <div className="space-y-2">
                 <div className="flex justify-between"><span className="text-gray-600">PV array ({plan.pv.kwp} kWp, {plan.pv.annualKWh.toFixed(0)} kWh/yr):</span><span className="font-bold text-gray-900">£{plan.pv.costGBP.toLocaleString()}</span></div>
                 <div className="flex justify-between"><span className="text-gray-600">Collector ({plan.thermal.areaM2} m², {plan.thermal.annualKWh.toFixed(0)} kWh·th/yr):</span><span className="font-bold text-gray-900">£{plan.thermal.costGBP.toLocaleString()}</span></div>
+                <div className="flex justify-between"><span className="text-gray-600">Pump station + controller + fittings (once):</span><span className="font-bold text-gray-900">£500</span></div>
                 <div className="flex justify-between"><span className="text-gray-600">Sand media ({plan.thermal.sandMassKg.toFixed(0)} kg of aggregate):</span><span className="font-bold text-gray-900">£{plan.thermal.mediaCostGBP.toFixed(0)}</span></div>
                 <div className="flex justify-between"><span className="text-gray-600">Store vessel + insulation + exchanger ({cfg.storeKWh} kWh·th):</span><span className="font-bold text-gray-900">£{plan.thermal.vesselCostGBP.toFixed(0)}</span></div>
                 <div className="flex justify-between pt-2 border-t border-gray-100"><span className="font-semibold text-gray-800">System total:</span><span className="font-bold text-gray-900">£{plan.economics.systemCostGBP.toLocaleString()}</span></div>
