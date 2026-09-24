@@ -1,182 +1,117 @@
-import { useRef, useEffect, useState } from 'react';
-import { Sun, Zap, Battery, Settings, Thermometer, Lightbulb, Activity, Play, Pause, RotateCcw } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Sun, Battery, Lightbulb, Activity, Play, Pause, RotateCcw, ArrowRight, Thermometer, Scale } from 'lucide-react';
+import {
+  DEFAULT_HYBRID,
+  HEAT_FLOW_START,
+  HYBRID_COLLECT_EFFICIENCY,
+  ORC_EFFICIENCY,
+  heatFlowStep,
+  hybridStoreTemperatureC,
+  storeHeatLoss,
+  type HeatFlowParams,
+  type HeatFlowState,
+} from '../utils/heatloom';
 
-interface FlowState {
-  sunlight: number;
-  area: number;
-  usage: number;
-  storage: number;
-  arrowPhase: number;
-  running: boolean;
+// Three simulated minutes per animation frame: about three hours a second.
+const HOURS_PER_FRAME = 0.05;
+const PEAK_SUN_KW_M2 = 1.0;
+const CAPACITY_KWH = DEFAULT_HYBRID.storeKWh;
+const HALF_LIFE_DAYS = storeHeatLoss(CAPACITY_KWH).halfLifeDays;
+
+const one = (x: number) => x.toFixed(1);
+const two = (x: number) => x.toFixed(2);
+
+function FlowArrow({ active }: { active: boolean }) {
+  return (
+    <div className="flex items-center justify-center py-1 lg:py-0" aria-hidden="true">
+      <ArrowRight className={`w-7 h-7 rotate-90 lg:rotate-0 ${active ? 'text-orange-400 animate-pulse' : 'text-gray-600'}`} />
+    </div>
+  );
 }
 
 export default function EnergyFlow() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
-  
-  const [state, setState] = useState<FlowState>({
-    sunlight: 60,
-    area: 10,
-    usage: 3,
-    storage: 0,
-    arrowPhase: 0,
-    running: true
-  });
-
-  const drawArrow = (ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, color: string, intensity: number = 1) => {
-    const segments = 8;
-    ctx.lineWidth = 4;
-    
-    for (let i = 0; i < segments; i++) {
-      const progress = (i / segments + state.arrowPhase) % 1;
-      const alpha = Math.sin(progress * Math.PI) * intensity * 0.8;
-      
-      const sx = x1 + (x2 - x1) * progress;
-      const sy = y1 + (y2 - y1) * progress;
-      const ex = sx + (x2 - x1) / segments * 0.6;
-      const ey = sy + (y2 - y1) / segments * 0.6;
-      
-      const alphaHex = Math.floor(alpha * 255).toString(16).padStart(2, '0');
-      ctx.strokeStyle = color + alphaHex;
-      ctx.beginPath();
-      ctx.moveTo(sx, sy);
-      ctx.lineTo(ex, ey);
-      ctx.stroke();
-      
-      // Arrow head on last segment
-      if (i === segments - 1 && alpha > 0.3) {
-        const angle = Math.atan2(y2 - y1, x2 - x1);
-        ctx.fillStyle = color;
-        ctx.globalAlpha = alpha;
-        ctx.beginPath();
-        ctx.moveTo(x2, y2);
-        ctx.lineTo(x2 - 15 * Math.cos(angle - 0.5), y2 - 15 * Math.sin(angle - 0.5));
-        ctx.lineTo(x2 - 15 * Math.cos(angle + 0.5), y2 - 15 * Math.sin(angle + 0.5));
-        ctx.closePath();
-        ctx.fill();
-        ctx.globalAlpha = 1;
-      }
-    }
-  };
-
-  const draw = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Fixed canvas size to prevent stretching
-    canvas.width = 800;
-    canvas.height = 200;
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Calculate energy flows
-    const creation = (state.sunlight / 100) * state.area * 0.6;
-    const netFlow = creation - state.usage;
-    
-    if (state.running) {
-      setState(prev => ({
-        ...prev,
-        storage: Math.max(0, prev.storage + netFlow * 0.05),
-        arrowPhase: (prev.arrowPhase + 0.03) % 1
-      }));
-    }
-
-    // Draw animated arrows between component positions
-    const positions = [
-      { x: 80, y: 100 },   // Solar
-      { x: 240, y: 100 },  // Heat Exchange
-      { x: 400, y: 100 },  // Storage
-      { x: 560, y: 100 },  // Generator
-      { x: 720, y: 100 }   // Output
-    ];
-
-    const flowIntensity = Math.max(0.2, creation / 10);
-    const storageIntensity = Math.max(0.2, state.storage / 50);
-    const outputIntensity = Math.max(0.2, state.usage / 10);
-
-    // Energy flow arrows
-    drawArrow(ctx, positions[0].x + 40, positions[0].y, positions[1].x - 40, positions[1].y, '#fbbf24', flowIntensity);
-    drawArrow(ctx, positions[1].x + 40, positions[1].y, positions[2].x - 40, positions[2].y, '#f97316', flowIntensity);
-    drawArrow(ctx, positions[2].x + 40, positions[2].y, positions[3].x - 40, positions[3].y, '#dc2626', storageIntensity);
-    drawArrow(ctx, positions[3].x + 40, positions[3].y, positions[4].x - 40, positions[4].y, '#10b981', outputIntensity);
-
-    // Draw energy bars at bottom
-    const barY = 160;
-    const barHeight = 20;
-    
-    // Creation bar
-    ctx.fillStyle = '#fbbf24';
-    ctx.fillRect(50, barY, Math.min(creation * 30, 200), barHeight);
-    ctx.strokeStyle = '#92400e';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(50, barY, 200, barHeight);
-    
-    // Storage bar
-    ctx.fillStyle = '#dc2626';
-    ctx.fillRect(300, barY, Math.min(state.storage * 3, 200), barHeight);
-    ctx.strokeStyle = '#7f1d1d';
-    ctx.strokeRect(300, barY, 200, barHeight);
-    
-    // Usage bar
-    ctx.fillStyle = '#10b981';
-    ctx.fillRect(550, barY, Math.min(state.usage * 30, 200), barHeight);
-    ctx.strokeStyle = '#047857';
-    ctx.strokeRect(550, barY, 200, barHeight);
-  };
+  const [sunPct, setSunPct] = useState(60);
+  const [area, setArea] = useState(DEFAULT_HYBRID.collectorM2);
+  const [demandKW, setDemandKW] = useState(0.5);
+  const [running, setRunning] = useState(true);
+  const [sim, setSim] = useState<HeatFlowState>(HEAT_FLOW_START);
 
   useEffect(() => {
-    const animate = () => {
-      draw();
-      animationRef.current = requestAnimationFrame(animate);
+    if (!running) return;
+    const p: HeatFlowParams = {
+      sunKWPerM2: (sunPct / 100) * PEAK_SUN_KW_M2,
+      areaM2: area,
+      demandKW,
+      capacityKWh: CAPACITY_KWH,
     };
-    
-    animationRef.current = requestAnimationFrame(animate);
-    
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [state]);
+    let frame = requestAnimationFrame(function tick() {
+      setSim((prev) => heatFlowStep(prev, p, HOURS_PER_FRAME));
+      frame = requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [running, sunPct, area, demandKW]);
 
-  const resetSystem = () => {
-    setState(prev => ({ ...prev, storage: 0, arrowPhase: 0 }));
-  };
+  const sunlightKW = (sunPct / 100) * PEAK_SUN_KW_M2 * area;
+  const collectedKW = sunlightKW * HYBRID_COLLECT_EFFICIENCY;
+  const storeFull = sim.storedKWh >= CAPACITY_KWH - 1e-9;
+  const storeEmpty = sim.storedKWh <= 1e-9;
+  // Instantaneous delivery: what the next few simulated seconds would deliver.
+  const probeH = 0.01;
+  const probe = heatFlowStep(
+    sim,
+    { sunKWPerM2: (sunPct / 100) * PEAK_SUN_KW_M2, areaM2: area, demandKW, capacityKWh: CAPACITY_KWH },
+    probeH
+  );
+  const deliveredKW = (probe.deliveredKWh - sim.deliveredKWh) / probeH;
+  const storeC = hybridStoreTemperatureC(sim.storedKWh, CAPACITY_KWH);
+  const books = sim.collectedKWh - (sim.deliveredKWh + sim.lostKWh + sim.dumpedKWh + sim.storedKWh);
+  const ledger: Array<[string, number, string]> = [
+    ['Collected', sim.collectedKWh, 'text-orange-300'],
+    ['Delivered', sim.deliveredKWh, 'text-blue-300'],
+    ['Lost from store', sim.lostKWh, 'text-red-300'],
+    ['Parked (store full)', sim.dumpedKWh, 'text-yellow-300'],
+    ['In the store', sim.storedKWh, 'text-purple-300'],
+    ['Unmet demand', sim.unmetKWh, 'text-gray-300'],
+  ];
 
   return (
     <section id="energy-flow" className="py-24 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-16">
-          <h2 className="text-5xl font-bold mb-8 bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
-            Energy Flow Visualization
+          <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+            Energy Flow
           </h2>
-          <p className="text-xl text-gray-300 max-w-4xl mx-auto font-light">
-            Watch energy flow through the complete Heat Loom system in real-time. Adjust parameters to see how different conditions affect energy generation and storage.
+          <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto font-light">
+            The Hybrid's heat side as a toy balance: sunlight on the tubes, heat into the {CAPACITY_KWH} kWh sand store,
+            heat out to the house. Constant sun and constant demand, simulated at about three hours a second — and the
+            books balance at every step.
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-3xl shadow-2xl border border-gray-700 mb-12">
-          <div className="flex items-center justify-between mb-8">
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-4 sm:p-8 rounded-3xl shadow-2xl border border-gray-700 mb-12">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center flex-shrink-0">
                 <Activity className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-2xl font-bold">System Workflow</h3>
+              <div>
+                <h3 className="text-2xl font-bold">Heat balance</h3>
+                <p className="text-gray-400 text-sm">Simulated {one(sim.hours)} h</p>
+              </div>
             </div>
-            
-            <div className="flex items-center space-x-4">
+
+            <div className="flex flex-wrap items-center gap-3">
               <button
-                onClick={() => setState(prev => ({ ...prev, running: !prev.running }))}
+                type="button"
+                onClick={() => setRunning((r) => !r)}
                 className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 rounded-xl transition-all duration-300 font-semibold shadow-lg"
               >
-                {state.running ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                <span>{state.running ? 'Pause' : 'Play'}</span>
+                {running ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                <span>{running ? 'Pause' : 'Play'}</span>
               </button>
               <button
-                onClick={resetSystem}
+                type="button"
+                onClick={() => setSim(HEAT_FLOW_START)}
                 className="flex items-center space-x-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-xl transition-all duration-300 font-medium"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -185,184 +120,147 @@ export default function EnergyFlow() {
             </div>
           </div>
 
-          {/* Component visualization with proper HTML layout */}
-          <div className="relative bg-gradient-to-b from-gray-900/50 to-gray-800/50 rounded-2xl p-8 border border-gray-600/50 mb-8">
-            <div className="grid grid-cols-5 gap-4 mb-8">
-              <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 p-6 rounded-2xl border border-yellow-500/30 text-center group hover:scale-105 transition-transform">
-                <Sun className="w-12 h-12 text-yellow-400 mx-auto mb-3" />
-                <h4 className="font-bold text-white">Solar Collector</h4>
-                <p className="text-yellow-300 text-sm mt-2">
-                  {((state.sunlight / 100) * state.area * 0.6).toFixed(2)} kW
-                </p>
-              </div>
-
-              <div className="bg-gradient-to-br from-orange-500/20 to-red-500/20 p-6 rounded-2xl border border-orange-500/30 text-center group hover:scale-105 transition-transform">
-                <Thermometer className="w-12 h-12 text-orange-400 mx-auto mb-3" />
-                <h4 className="font-bold text-white">Heat Exchange</h4>
-                <p className="text-orange-300 text-sm mt-2">
-                  {Math.round(250 + (state.sunlight / 100) * 150)}°C
-                </p>
-              </div>
-
-              <div className="bg-gradient-to-br from-purple-500/20 to-violet-500/20 p-6 rounded-2xl border border-purple-500/30 text-center group hover:scale-105 transition-transform">
-                <Battery className="w-12 h-12 text-purple-400 mx-auto mb-3" />
-                <h4 className="font-bold text-white">Thermal Storage</h4>
-                <p className="text-purple-300 text-sm mt-2">
-                  {state.storage.toFixed(1)} kWh
-                </p>
-              </div>
-
-              <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 p-6 rounded-2xl border border-green-500/30 text-center group hover:scale-105 transition-transform">
-                <Zap className="w-12 h-12 text-green-400 mx-auto mb-3" />
-                <h4 className="font-bold text-white">ORC Generator</h4>
-                <p className="text-green-300 text-sm mt-2">
-                  {(Math.min(state.storage * 0.18, state.usage * 0.3)).toFixed(2)} kW
-                </p>
-              </div>
-
-              <div className="bg-gradient-to-br from-blue-500/20 to-indigo-500/20 p-6 rounded-2xl border border-blue-500/30 text-center group hover:scale-105 transition-transform">
-                <Lightbulb className="w-12 h-12 text-blue-400 mx-auto mb-3" />
-                <h4 className="font-bold text-white">Energy Output</h4>
-                <p className="text-blue-300 text-sm mt-2">
-                  {state.usage} kWh/h
-                </p>
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-2 lg:gap-3 items-stretch mb-8">
+            <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 p-5 rounded-2xl border border-yellow-500/30 text-center">
+              <Sun className="w-10 h-10 text-yellow-400 mx-auto mb-2" />
+              <h4 className="font-bold text-white">Sunlight on tubes</h4>
+              <p className="text-yellow-300 text-lg mt-1">{two(sunlightKW)} kW</p>
+              <p className="text-gray-400 text-xs mt-1">
+                {sunPct}% of 1 kW/m² × {area} m²
+              </p>
             </div>
-
-            {/* Canvas for animated arrows only */}
-            <div className="relative">
-              <canvas
-                ref={canvasRef}
-                className="w-full rounded-xl border border-gray-600/50"
-                style={{ height: '200px' }}
-              />
+            <FlowArrow active={collectedKW > 0} />
+            <div className="bg-gradient-to-br from-orange-500/20 to-red-500/20 p-5 rounded-2xl border border-orange-500/30 text-center">
+              <Thermometer className="w-10 h-10 text-orange-400 mx-auto mb-2" />
+              <h4 className="font-bold text-white">Heat collected</h4>
+              <p className="text-orange-300 text-lg mt-1">{two(collectedKW)} kW</p>
+              <p className="text-gray-400 text-xs mt-1">
+                {Math.round(HYBRID_COLLECT_EFFICIENCY * 100)}% after tube optics, tube heat loss, soiling and pipework
+              </p>
+            </div>
+            <FlowArrow active={collectedKW > 0 && !storeFull} />
+            <div className="bg-gradient-to-br from-purple-500/20 to-violet-500/20 p-5 rounded-2xl border border-purple-500/30 text-center">
+              <Battery className="w-10 h-10 text-purple-400 mx-auto mb-2" />
+              <h4 className="font-bold text-white">Sand store</h4>
+              <p className="text-purple-300 text-lg mt-1">
+                {one(sim.storedKWh)} / {CAPACITY_KWH} kWh
+              </p>
+              <div className="h-2 bg-gray-700 rounded-full overflow-hidden mt-2">
+                <div
+                  className="h-full bg-gradient-to-r from-purple-400 to-violet-500"
+                  style={{ width: `${Math.min(100, (100 * sim.storedKWh) / CAPACITY_KWH)}%` }}
+                />
+              </div>
+              <p className="text-gray-400 text-xs mt-1">
+                ≈ {Math.round(storeC)} °C{storeFull ? ' · full: loop parked' : storeEmpty ? ' · below useful heat' : ''}
+              </p>
+            </div>
+            <FlowArrow active={deliveredKW > 0} />
+            <div className="bg-gradient-to-br from-blue-500/20 to-indigo-500/20 p-5 rounded-2xl border border-blue-500/30 text-center">
+              <Lightbulb className="w-10 h-10 text-blue-400 mx-auto mb-2" />
+              <h4 className="font-bold text-white">Heat delivered</h4>
+              <p className="text-blue-300 text-lg mt-1">
+                {two(deliveredKW)} of {two(demandKW)} kW
+              </p>
+              <p className="text-gray-400 text-xs mt-1">{deliveredKW < demandKW - 1e-6 ? 'the boiler makes up the rest' : 'demand met'}</p>
             </div>
           </div>
 
-          {/* Energy flow bars */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-gradient-to-br from-yellow-500/20 to-orange-500/20 p-6 rounded-2xl border border-yellow-500/30">
-              <div className="flex items-center space-x-3 mb-4">
-                <Sun className="w-6 h-6 text-yellow-400" />
-                <h4 className="text-lg font-bold">Energy Creation</h4>
-              </div>
-              <div className="bg-gray-900/50 rounded-xl p-4 mb-4">
-                <div className="h-4 bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 transition-all duration-500"
-                    style={{ width: `${Math.min(100, ((state.sunlight / 100) * state.area * 0.6) * 10)}%` }}
-                  />
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-yellow-400">
-                {((state.sunlight / 100) * state.area * 0.6).toFixed(2)} kWh/h
-              </div>
+          <div className="bg-black/30 rounded-2xl p-4 sm:p-6 mb-8">
+            <div className="flex items-center space-x-2 mb-4">
+              <Scale className="w-5 h-5 text-emerald-400" />
+              <h4 className="font-bold">The books, since reset</h4>
             </div>
-
-            <div className="bg-gradient-to-br from-purple-500/20 to-violet-500/20 p-6 rounded-2xl border border-purple-500/30">
-              <div className="flex items-center space-x-3 mb-4">
-                <Battery className="w-6 h-6 text-purple-400" />
-                <h4 className="text-lg font-bold">Thermal Storage</h4>
-              </div>
-              <div className="bg-gray-900/50 rounded-xl p-4 mb-4">
-                <div className="h-4 bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-purple-400 to-violet-500 transition-all duration-500"
-                    style={{ width: `${Math.min(100, state.storage * 2)}%` }}
-                  />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
+              {ledger.map(([label, value, color]) => (
+                <div key={label} className="bg-white/5 rounded-xl p-3">
+                  <div className="text-gray-400 text-xs">{label}</div>
+                  <div className={`font-bold ${color}`}>{one(value)} kWh</div>
                 </div>
-              </div>
-              <div className="text-2xl font-bold text-purple-400">
-                {state.storage.toFixed(1)} kWh
-              </div>
+              ))}
             </div>
-
-            <div className="bg-gradient-to-br from-blue-500/20 to-indigo-500/20 p-6 rounded-2xl border border-blue-500/30">
-              <div className="flex items-center space-x-3 mb-4">
-                <Lightbulb className="w-6 h-6 text-blue-400" />
-                <h4 className="text-lg font-bold">Energy Usage</h4>
-              </div>
-              <div className="bg-gray-900/50 rounded-xl p-4 mb-4">
-                <div className="h-4 bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 transition-all duration-500"
-                    style={{ width: `${Math.min(100, state.usage * 10)}%` }}
-                  />
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-blue-400">
-                {state.usage} kWh/h
-              </div>
-            </div>
+            <p className="text-gray-400 text-xs mt-4">
+              Collected − (delivered + lost + parked + stored) = {two(Math.abs(books) < 0.005 ? 0 : books)} kWh. Nothing is
+              created: heat that is neither used nor stored is lost, or never collected.
+            </p>
           </div>
 
-          {/* Controls */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 p-6 rounded-2xl border border-yellow-500/20">
-              <div className="flex items-center space-x-3 mb-4">
+              <label htmlFor="flow-sun" className="flex items-center space-x-3 mb-4 text-lg font-bold">
                 <Sun className="w-6 h-6 text-yellow-400" />
-                <h4 className="text-lg font-bold">Solar Input</h4>
-              </div>
-              <label className="block text-sm text-gray-300 mb-2">Sunlight Intensity (%)</label>
+                <span>Sunlight</span>
+              </label>
               <input
+                id="flow-sun"
                 type="range"
                 min="0"
                 max="100"
-                value={state.sunlight}
-                onChange={(e) => setState(prev => ({ ...prev, sunlight: parseInt(e.target.value) }))}
+                value={sunPct}
+                onChange={(e) => setSunPct(Number(e.target.value))}
                 className="w-full mb-2 accent-orange-500"
               />
-              <div className="text-2xl font-bold text-yellow-400">{state.sunlight}%</div>
+              <div className="text-2xl font-bold text-yellow-400">{sunPct}%</div>
+              <p className="text-gray-400 text-xs mt-1">of a clear-sky 1 kW/m²</p>
             </div>
 
             <div className="bg-gradient-to-br from-orange-500/10 to-red-500/10 p-6 rounded-2xl border border-orange-500/20">
-              <div className="flex items-center space-x-3 mb-4">
-                <Settings className="w-6 h-6 text-orange-400" />
-                <h4 className="text-lg font-bold">Collector Area</h4>
-              </div>
-              <label className="block text-sm text-gray-300 mb-2">Area (m²)</label>
+              <label htmlFor="flow-area" className="flex items-center space-x-3 mb-4 text-lg font-bold">
+                <Thermometer className="w-6 h-6 text-orange-400" />
+                <span>Tube area</span>
+              </label>
               <input
+                id="flow-area"
                 type="range"
                 min="1"
                 max="20"
-                value={state.area}
-                onChange={(e) => setState(prev => ({ ...prev, area: parseInt(e.target.value) }))}
+                value={area}
+                onChange={(e) => setArea(Number(e.target.value))}
                 className="w-full mb-2 accent-orange-500"
               />
-              <div className="text-2xl font-bold text-orange-400">{state.area} m²</div>
+              <div className="text-2xl font-bold text-orange-400">{area} m²</div>
             </div>
 
             <div className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 p-6 rounded-2xl border border-blue-500/20">
-              <div className="flex items-center space-x-3 mb-4">
+              <label htmlFor="flow-demand" className="flex items-center space-x-3 mb-4 text-lg font-bold">
                 <Lightbulb className="w-6 h-6 text-blue-400" />
-                <h4 className="text-lg font-bold">Energy Usage</h4>
-              </div>
-              <label className="block text-sm text-gray-300 mb-2">Usage Rate (kWh/h)</label>
+                <span>Heat demand</span>
+              </label>
               <input
+                id="flow-demand"
                 type="range"
                 min="0"
-                max="10"
-                step="0.5"
-                value={state.usage}
-                onChange={(e) => setState(prev => ({ ...prev, usage: parseFloat(e.target.value) }))}
+                max="5"
+                step="0.1"
+                value={demandKW}
+                onChange={(e) => setDemandKW(Number(e.target.value))}
                 className="w-full mb-2 accent-blue-500"
               />
-              <div className="text-2xl font-bold text-blue-400">{state.usage} kWh/h</div>
+              <div className="text-2xl font-bold text-blue-400">{one(demandKW)} kW</div>
+              <p className="text-gray-400 text-xs mt-1">
+                The default household's {DEFAULT_HYBRID.heatKWhPerDay} kWh/day averages {two(DEFAULT_HYBRID.heatKWhPerDay / 24)} kW
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="mt-12 bg-gradient-to-r from-orange-500/10 to-red-500/10 p-8 rounded-2xl border border-orange-500/20">
+        <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 p-6 md:p-8 rounded-2xl border border-orange-500/20">
           <div className="flex items-start space-x-4">
             <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
               <Activity className="w-6 h-6 text-orange-400" />
             </div>
             <div>
-              <h4 className="font-bold text-xl mb-3 text-orange-400">Energy Flow Notes</h4>
+              <h4 className="font-bold text-xl mb-3 text-orange-400">What this toy leaves out</h4>
               <p className="text-gray-300 leading-relaxed">
-                This visualization shows energy flowing through each stage of the Heat Loom system. Solar energy is collected, 
-                converted to high-temperature thermal energy, stored in the thermal mass, then converted to electricity via ORC 
-                while providing useful heat. Adjust the controls to see how different conditions affect system performance and energy balance.
+                Real skies change by the minute and by the month; the Hybrid's headline numbers come from its monthly model,
+                not from this panel. The store here loses heat with the same time constant as that model — half in about{' '}
+                {Math.round(HALF_LIFE_DAYS)} days — which is why it smooths days, not seasons. The retired research rig
+                added an ORC turbine after the store, turning about {Math.round(ORC_EFFICIENCY * 100)}% of its heat into
+                electricity:{' '}
+                <a href="#why-no-turbine" className="text-orange-300 underline hover:text-orange-200">
+                  why we deleted it
+                </a>
+                .
               </p>
             </div>
           </div>

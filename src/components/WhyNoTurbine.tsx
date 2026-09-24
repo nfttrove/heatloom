@@ -1,4 +1,13 @@
 import { Ban, Gauge, Repeat, Lightbulb } from 'lucide-react';
+import { COLLECTOR_EFFICIENCY, ORC_EFFICIENCY, ELECTRICITY_GBP_PER_KWH, HEAT_SOURCES } from '../utils/heatloom';
+
+// Carnot from 250 °C sand to a 20 °C garden, and what the ORC does with a kWh of heat.
+const T_HOT_K = 250 + 273.15;
+const T_COLD_K = 20 + 273.15;
+const CARNOT = 1 - T_COLD_K / T_HOT_K;
+const SUN_TO_ELECTRIC = COLLECTOR_EFFICIENCY * ORC_EFFICIENCY;
+const PENCE_VIA_ORC = ORC_EFFICIENCY * ELECTRICITY_GBP_PER_KWH * 100;
+const pct = (x: number) => `${(x * 100).toFixed(x < 0.2 ? 1 : 0)}%`;
 
 const ENGINES = [
   { name: 'Utility steam (600 °C, gigawatts)', eff: '40–45%', verdict: 'magnificent — at scale we will never own', tone: 'text-emerald-600' },
@@ -17,37 +26,39 @@ export default function WhyNoTurbine() {
             <Ban className="w-4 h-4 mr-2" />
             The Feature We Removed
           </div>
-          <h2 className="text-5xl font-bold text-gray-900 mb-6">Why we deleted our own turbine</h2>
-          <p className="text-2xl text-gray-600 max-w-4xl mx-auto font-light">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Why we deleted our own turbine</h2>
+          <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto font-light">
             Heat Loom started with an ORC — a steam engine running on refrigerant — making electricity from stored heat.
             We removed it, and the arithmetic that made us do it is the most honest page on this site.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
-          <div className="bg-gradient-to-br from-orange-50 to-red-50 p-10 rounded-3xl border border-orange-200/50">
+          <div className="bg-gradient-to-br from-orange-50 to-red-50 p-6 md:p-10 rounded-3xl border border-orange-200/50">
             <div className="flex items-center space-x-3 mb-6">
               <Gauge className="w-8 h-8 text-red-600" />
               <h3 className="text-2xl font-bold text-gray-900">The wall is Carnot, not engineering</h3>
             </div>
             <p className="text-gray-700 leading-relaxed mb-6">
               Every heat engine obeys <strong>η ≤ 1 − T<sub>cold</sub>/T<sub>hot</sub></strong>. Sand at 250 °C
-              exhausting to a 20 °C garden: a ceiling of ~44%, of which real small machines harvest about a third.
-              That's the 15–18% — not a flaw in the ORC, the arithmetic of boiling at modest temperatures.
+              exhausting to a 20 °C garden: a ceiling of ~{pct(CARNOT)}, of which real small machines harvest a third to
+              two-fifths. That's the 15–18% — not a flaw in the ORC, the arithmetic of boiling at modest temperatures.
             </p>
             <div className="bg-white p-6 rounded-2xl border border-orange-200/60 font-mono text-sm text-gray-800 space-y-1">
-              <div>collector: 60% of sunlight → heat</div>
-              <div>ORC: 18% of heat → electricity</div>
-              <div className="text-red-600 font-bold">= 10.8% sun → electricity</div>
-              <div className="text-blue-600 font-bold">PV alone: 22% sun → electricity</div>
+              <div>collector: {pct(COLLECTOR_EFFICIENCY)} of sunlight → heat</div>
+              <div>ORC: {pct(ORC_EFFICIENCY)} of heat → electricity</div>
+              <div className="text-red-700 font-bold">= {pct(SUN_TO_ELECTRIC)} sun → electricity</div>
+              <div className="text-blue-700 font-bold">PV alone: ~22% sun → electricity (panel rating)</div>
             </div>
             <p className="text-gray-700 leading-relaxed mt-6">
-              Our turbine made electricity out of sunlight <em>worse than a £120 panel</em> — while consuming the
-              heat that was the valuable product all along.
+              Our turbine made electricity out of sunlight <em>worse than a £120 panel</em>. And each kWh of heat it
+              consumed became about {PENCE_VIA_ORC.toFixed(1)}p of electricity — barely more than the{' '}
+              {(HEAT_SOURCES.gas.gbpPerKWh * 100).toFixed(1)}p that heat is worth against gas, and much less than the{' '}
+              {(HEAT_SOURCES.heatPump.gbpPerKWh * 100).toFixed(1)}p it is worth against a heat pump.
             </p>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-10 rounded-3xl border border-blue-200/50">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 md:p-10 rounded-3xl border border-blue-200/50">
             <div className="flex items-center space-x-3 mb-6">
               <Lightbulb className="w-8 h-8 text-blue-600" />
               <h3 className="text-2xl font-bold text-gray-900">What an ORC actually is</h3>
@@ -65,9 +76,9 @@ export default function WhyNoTurbine() {
             <div className="flex items-start space-x-2 bg-white p-4 rounded-xl border border-blue-200/60">
               <Repeat className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
               <p className="text-gray-700 text-sm leading-relaxed">
-                At district-heating or industrial scale — with Polar-Night-style sand stores — ORCs and steam
-                earn their keep. In a garden, the honest answer is: photons → electrons directly (PV);
-                photons → heat when heat is the job (sand).
+                At district-heating or industrial scale, big sand stores (Polar Night Energy's in Finland) earn
+                their keep selling heat, and ORCs earn theirs on industrial waste heat. In a garden, the honest
+                answer is: photons → electrons directly (PV); photons → heat when heat is the job.
               </p>
             </div>
           </div>

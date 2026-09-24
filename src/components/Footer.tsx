@@ -19,7 +19,7 @@ export default function Footer() {
           </div>
 
           <p className="text-gray-300 mb-12 max-w-2xl mx-auto text-lg font-light">
-            Open source solar thermal technology for distributed energy generation
+            Open-source solar heat and storage — modelled, pre-registered, not yet built
           </p>
 
           {/* Links */}
@@ -46,7 +46,7 @@ export default function Footer() {
           {/* Copyright */}
           <div className="pt-8 border-t border-gray-700">
             <p className="text-gray-400 text-sm">
-              © 2025 Heat Loom Project. Open source under MIT License.
+              © 2026 Heat Loom Project. Open source under the MIT License.
             </p>
           </div>
         </div>

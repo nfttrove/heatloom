@@ -1,7 +1,15 @@
-import { DollarSign, TrendingUp, Calculator, Clock } from 'lucide-react';
-import { hybridPlan } from '../utils/heatloom';
+import { PoundSterling, TrendingUp, Calculator, Clock } from 'lucide-react';
+import { hybridPlan, DEFAULT_HYBRID, ELECTRICITY_GBP_PER_KWH, HEAT_SOURCES, formatGBP } from '../utils/heatloom';
 
-const PLAN = hybridPlan({ electricKWhPerDay: 8, heatKWhPerDay: 30, pvKwp: 2, collectorM2: 3, storeKWh: 40, dniAnnual: 3 });
+const PLAN = hybridPlan(DEFAULT_HYBRID);
+const E = PLAN.economics;
+const ALL_SELF_USED = hybridPlan({ ...DEFAULT_HYBRID, pvSelfUse: 1 });
+const VS_HEAT_PUMP = hybridPlan({ ...DEFAULT_HYBRID, heatSource: 'heatPump' });
+const VS_ELECTRIC = hybridPlan({ ...DEFAULT_HYBRID, heatSource: 'electric' });
+const BIG_STORE = hybridPlan({ ...DEFAULT_HYBRID, storeKWh: DEFAULT_HYBRID.storeKWh * 2 });
+const kwh = (x: number) => Math.round(x).toLocaleString('en-GB');
+const pence = (x: number) => `${(x * 100).toFixed(1)}p`;
+const lowerFirst = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
 
 export default function ROI() {
   return (
@@ -10,70 +18,80 @@ export default function ROI() {
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-900 mb-6">Return on Investment</h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Real-world economics for the default Hybrid rig — computed by the same tested module as every other number on this site.
+            Modelled economics for the default Hybrid against a gas boiler — computed by the same tested module as every
+            other number on this site. Nothing has been built and measured yet.
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-8 md:p-12 rounded-3xl shadow-lg mb-12">
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 md:p-12 rounded-3xl shadow-lg mb-12">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="flex items-center space-x-3 mb-6">
                 <Calculator className="w-8 h-8 text-green-600" />
-                <h3 className="text-2xl font-bold text-gray-900">Field Prototype ROI</h3>
+                <h3 className="text-2xl font-bold text-gray-900">Default Hybrid — modelled ROI</h3>
               </div>
               <div className="space-y-4">
                 <div className="bg-white p-4 rounded-lg border-l-4 border-green-600">
                   <h4 className="font-bold text-gray-900 mb-2">System Cost</h4>
-                  <p className="text-3xl font-bold text-green-600">£{PLAN.economics.systemCostGBP.toLocaleString()}</p>
-                  <p className="text-gray-600 text-sm">2 kWp PV + 3 m² collector + 40 kWh sand store + pump/controller (real 2026 prices)</p>
+                  <p className="text-3xl font-bold text-green-700">{formatGBP(E.systemCostGBP)}</p>
+                  <p className="text-gray-600 text-sm">
+                    {DEFAULT_HYBRID.pvKwp} kWp PV + {DEFAULT_HYBRID.collectorM2} m² evacuated tubes + {DEFAULT_HYBRID.storeKWh} kWh sand store + pump
+                    station and controller (sourced 2026 DIY prices; no installer labour)
+                  </p>
                 </div>
                 <div className="bg-white p-4 rounded-lg border-l-4 border-blue-600">
                   <h4 className="font-bold text-gray-900 mb-2">Annual Savings</h4>
-                  <p className="text-3xl font-bold text-blue-600">£{Math.round(PLAN.economics.annualSavingsGBP)}</p>
-                  <p className="text-gray-600 text-sm">Coverage-capped: winter days counted at winter output</p>
+                  <p className="text-3xl font-bold text-blue-700">{formatGBP(E.annualSavingsGBP)}</p>
+                  <p className="text-gray-600 text-sm">
+                    PV {formatGBP(E.electricSavingsGBP)} + heat {formatGBP(E.heatSavingsGBP)}; pessimistic {formatGBP(E.pessimisticSavingsGBP)}.
+                    Counts only PV used at home and heat that meets each month's demand.
+                  </p>
                 </div>
                 <div className="bg-white p-4 rounded-lg border-l-4 border-orange-600">
                   <h4 className="font-bold text-gray-900 mb-2">Payback Period</h4>
-                  <p className="text-3xl font-bold text-orange-600">{PLAN.economics.paybackYears.toFixed(1)} years</p>
-                  <p className="text-gray-600 text-sm">Shorter in sunnier sites; the naive number is shown below, unearned</p>
+                  <p className="text-3xl font-bold text-orange-700">{E.paybackYears.toFixed(1)} years</p>
+                  <p className="text-gray-600 text-sm">
+                    {E.pessimisticPaybackYears.toFixed(1)} in the pessimistic case. The naive {formatGBP(E.naiveSavingsGBP)} a year a flat
+                    calculation would promise is not earned.
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="space-y-6">
               <div className="bg-white p-6 rounded-xl shadow-lg">
-                <h4 className="text-lg font-bold text-gray-900 mb-4">Annual Energy Production</h4>
+                <h4 className="text-lg font-bold text-gray-900 mb-4">Annual Energy (modelled)</h4>
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Electricity (PV, 2 kWp)</span>
-                    <span className="font-bold text-yellow-600">1,900 kWh/year</span>
+                  <div className="flex justify-between items-center gap-3">
+                    <span className="text-gray-700">PV generated ({DEFAULT_HYBRID.pvKwp} kWp)</span>
+                    <span className="font-bold text-yellow-700">{kwh(PLAN.pv.annualKWh)} kWh/yr</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Value @ £0.28/kWh</span>
-                    <span className="font-bold text-green-600">£532/year</span>
+                  <div className="flex justify-between items-center gap-3">
+                    <span className="text-gray-700">…used at home ({Math.round(PLAN.pv.selfUse * 100)}%) @ {pence(ELECTRICITY_GBP_PER_KWH)}</span>
+                    <span className="font-bold text-green-700">{kwh(PLAN.pv.usedKWh)} kWh · {formatGBP(E.electricSavingsGBP)}/yr</span>
                   </div>
                   <hr className="border-gray-200" />
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Heat (collector + sand)</span>
-                    <span className="font-bold text-red-600">1,974 kWh<sub>th</sub>/year</span>
+                  <div className="flex justify-between items-center gap-3">
+                    <span className="text-gray-700">Heat collected (tubes + sand)</span>
+                    <span className="font-bold text-red-700">{kwh(PLAN.thermal.annualKWh)} kWh<sub>th</sub>/yr</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Value @ £0.045/kWh<sub>th</sub></span>
-                    <span className="font-bold text-green-600">£89/year</span>
+                  <div className="flex justify-between items-center gap-3">
+                    <span className="text-gray-700">…meeting demand @ {pence(E.heatGBPPerKWh)} (gas)</span>
+                    <span className="font-bold text-green-700">{kwh(PLAN.thermal.usedKWh)} kWh · {formatGBP(E.heatSavingsGBP)}/yr</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-r from-orange-500 to-red-600 p-6 rounded-xl text-white">
+              <div className="bg-gradient-to-r from-orange-600 to-red-700 p-6 rounded-xl text-white">
                 <div className="flex items-center space-x-2 mb-3">
                   <Clock className="w-6 h-6" />
-                  <h4 className="text-lg font-bold">Accelerated Payback Scenarios</h4>
+                  <h4 className="text-lg font-bold">What moves the payback</h4>
                 </div>
                 <ul className="space-y-2 text-sm">
-                  <li>• Sunnier sites: DNI scales the thermal side linearly</li>
-                  <li>• Bigger sand store: the cheapest component to oversize</li>
-                  <li>• Rising heat prices: the thermal share appreciates</li>
-                  <li>• Field data: filed measurements will replace these predictions</li>
+                  <li>• Using all the PV at home (a battery, or daytime loads): {ALL_SELF_USED.economics.paybackYears.toFixed(1)} years</li>
+                  <li>• If the heat displaces a {lowerFirst(HEAT_SOURCES.heatPump.label)} rather than gas: {VS_HEAT_PUMP.economics.paybackYears.toFixed(1)} years; direct electric heating: {VS_ELECTRIC.economics.paybackYears.toFixed(1)} years</li>
+                  <li>• A bigger sand store: doubling it raises the cost to {formatGBP(BIG_STORE.economics.systemCostGBP)} and changes coverage not at all — it carries days, not seasons</li>
+                  <li>• Field data: once builders file measurements, they replace these predictions</li>
                 </ul>
               </div>
             </div>
@@ -83,25 +101,26 @@ export default function ROI() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-6 rounded-xl border border-yellow-200">
             <TrendingUp className="w-10 h-10 text-orange-600 mb-4" />
-            <h4 className="text-lg font-bold text-gray-900 mb-3">Scalability Benefits</h4>
+            <h4 className="text-lg font-bold text-gray-900 mb-3">Scale</h4>
             <p className="text-gray-700 text-sm">
-              Parallel installations reduce per-unit costs through shared infrastructure and bulk material purchasing.
+              Costs scale roughly linearly in this model. Bulk buying or shared installs might lower them; nothing here assumes it.
             </p>
           </div>
 
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
-            <DollarSign className="w-10 h-10 text-green-600 mb-4" />
-            <h4 className="text-lg font-bold text-gray-900 mb-3">Long-term Value</h4>
+            <PoundSterling className="w-10 h-10 text-green-600 mb-4" />
+            <h4 className="text-lg font-bold text-gray-900 mb-3">Lifetime</h4>
             <p className="text-gray-700 text-sm">
-              25+ year system life with modular upgrades provides sustained value and adaptability to future technologies.
+              Unknown. Panels commonly carry 25-year warranties; the tubes, store, pump and fluid in this design are unproven,
+              and the payback above assumes nothing needs replacing.
             </p>
           </div>
 
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
             <Calculator className="w-10 h-10 text-blue-600 mb-4" />
-            <h4 className="text-lg font-bold text-gray-900 mb-3">Custom Sizing</h4>
+            <h4 className="text-lg font-bold text-gray-900 mb-3">Your numbers</h4>
             <p className="text-gray-700 text-sm">
-              Use our sizing methodology to calculate optimal collector area and storage mass for your specific requirements.
+              Use the Hybrid's sliders for your own demand, sunshine, self-use and heat source — the same module computes them.
             </p>
           </div>
         </div>

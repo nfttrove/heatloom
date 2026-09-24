@@ -1,41 +1,58 @@
 # Heat Loom
 
-**heatloom.com** — a concept site for a DIY concentrating solar-thermal system:
-mirror area in, stored heat in sand, electricity out via a small ORC.
+**heatloom.com** — a concept site for DIY solar heat and storage. It began as
+a concentrating solar-thermal rig (mirror troughs, a hot sand store, a small
+ORC turbine); that design is retired as a house system, and the site now
+leads with the **Hybrid**: bought PV for electricity, commodity
+evacuated-tube collectors and a sand store for heat. Nothing has been built
+and measured yet.
 
 What makes this repo slightly unusual for a product site: the engineering
-numbers are **extracted, tested code**, not marketing copy.
+numbers are **extracted, tested code**, not marketing copy. Prose figures
+are computed from the module at render time, so the copy cannot drift from
+the model.
 
 ## The engineering module
 
 All configurator/ROI math lives in `src/utils/heatloom.ts` (pure functions,
 assumptions stated as constants, tested in `heatloom.test.ts`):
 
-- **Loss chain** — optics 0.88 × soiling 0.96 × receiver 0.93 × storage 0.90
-  × pipework 0.85 ≈ **0.60 collector efficiency**. The site's headline
-  number is a product you can audit, stage by stage.
-- **Seasonal honesty** — DNI is an annual average; December runs ≈ 0.3× and
-  high summer ≈ 1.6×. Every recommendation ships with its winter number,
-  and the "Dark December" sizing mode sizes for the worst month.
-- **Savings you can actually bank** — winter days are capped at winter
-  output, so the £/year figure is always ≤ the naive calculation, never
-  above it.
-- **Pessimistic band** — −10% sun × low-end efficiency (0.55) shown beside
-  every central estimate.
-- **Hybrid mode** — the configuration we'd actually bet money on: bought PV
-  for electricity, collector + sand store for heat, ORC deleted. Coverage
-  shown annual *and* December, savings coverage-capped, sand costed at
-  ~£10/kWh·th vs ~£300/kWh for lithium. Its default-plan claim is
-  pre-registered in the In Fini claim registry.
+- **Two loss chains** — the research rig's troughs: optics 0.88 × soiling
+  0.96 × receiver 0.93 × storage 0.90 × pipework 0.85 ≈ **0.60**. The
+  Hybrid's evacuated tubes have no mirror stage: optics 0.70 × heat loss
+  0.75 × soiling 0.96 × storage 0.90 × pipework 0.85 ≈ **0.39** of global
+  sunlight on the tilt.
+- **Sand by temperature swing** — kg per kWh = 3600 / (0.8 × ΔT): 11 kg/kWh
+  for the rig's 400 K swing, 60 kg/kWh for the Hybrid's 120 → 45 °C. At
+  those temperatures a water tank needs about 17 kg/kWh.
+- **Standing loss** — τ = C / UA for an insulated cylinder. A house-scale
+  store holds **days, not seasons**, so no month uses more heat than it
+  collects.
+- **Monthly shapes** — sunshine (December ≈ 0.3×, midsummer ≈ 1.6×) and
+  heat demand (hot water plus heating degree days) replace a single winter
+  factor.
+- **Savings you can actually bank** — PV counts only the share used at home
+  (50% by default; a DIY install earns no export payment), heat counts only
+  what meets each month's demand, valued at what it displaces (gas by
+  default; oil, heat pump or direct electric are options).
+- **Pessimistic case** — −10% sun and the low end of each efficiency band,
+  shown beside every central estimate.
+- **Rig costs from its own bill of materials** — the retired rig is priced
+  from the Build Guide's parts list, not a guessed £/m².
+- **Toy balances** for the animated panels (Energy Flow, Demo) share the
+  same constants and are tested to conserve energy.
 
 ## Site narrative
 
-The site sells what survived scrutiny: **seasonal heat storage** (the sand
-battery) plus the **Hybrid** (collector + sand + bought PV). The original
-ORC electricity stage became ["Why we deleted our own
-turbine"](src/components/WhyNoTurbine.tsx) — a Carnot explainer — and both
-performance claims are displayed with their registry hashes in
-[OnTrial](src/components/OnTrial.tsx).
+The site leads with the Hybrid and shows its economics as they are: against
+gas, the PV half does most of the earning and the thermal half barely pays;
+against a heat pump or direct electric, the heat half matters more. The
+original ORC electricity stage became ["Why we deleted our own
+turbine"](src/components/WhyNoTurbine.tsx) — a Carnot explainer. The
+registered claims are displayed as filed, with their hashes, in
+[OnTrial](src/components/OnTrial.tsx), next to what the corrected model now
+predicts (less). A [Safety](src/components/Safety.tsx) section covers
+concentrated sunlight, steam, fire and weight.
 
 ## Honesty policy
 
@@ -43,8 +60,8 @@ The sibling project [in-fini](https://github.com/nfttrove/in-fini) puts
 extraordinary claims on trial with artifact budgets and error bars. Heat
 Loom makes a claim, so it volunteers for the same treatment: publish the
 losses, the seasonal shortfall, and the pessimistic case before anyone
-asks. Planned next: a field-performance registry where builders file
-measured yields against these predictions.
+asks. Planned next: a measurement protocol, then a field-performance
+registry where builders file measured yields against these predictions.
 
 ## Development
 
