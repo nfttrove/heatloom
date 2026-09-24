@@ -4,15 +4,15 @@ const REPO = 'https://github.com/nfttrove/heatloom';
 
 // What exists today, and what does not yet — stated plainly.
 const HAVE = [
-  'This website and its tested engineering module (MIT)',
-  'The research rig\'s bill of materials and build steps (Build Guide)',
-  'The loss chains, monthly model and every assumption, stated in code (with sources where we have them)',
-  'Pre-registered production claims in the In Fini registry (On Trial)',
+  'This website and its tested model (MIT)',
+  "The loom's parts list and the build steps",
+  'Every price and assumption, stated in code with its source',
+  'Predictions filed in the In Fini claim registry',
 ];
 const NOT_YET = [
-  'CAD drawings, wiring diagrams or photo guides',
-  'Any built rig or measured performance data',
-  'A builder community — be the first to file measured yields',
+  "The loom's firmware and wiring diagram",
+  'A built system with measured results',
+  'A builder community — be the first to share yours',
 ];
 
 export default function OpenSource() {
@@ -22,7 +22,7 @@ export default function OpenSource() {
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8">Open Source & Community</h2>
           <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto font-light">
-            The model, the site and the plans that exist are open. Here is exactly what is there — and what isn't yet.
+            The model, the site and the plans are open. Here is what is there, and what's coming.
           </p>
         </div>
 
@@ -62,7 +62,7 @@ export default function OpenSource() {
                 <ClipboardList className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-white">Not yet</h3>
+                <h3 className="text-2xl font-bold text-white">Coming next</h3>
                 <p className="text-blue-100">Help wanted</p>
               </div>
             </div>
@@ -99,10 +99,9 @@ export default function OpenSource() {
           <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-8">
             <Rocket className="w-10 h-10" />
           </div>
-          <h3 className="text-2xl md:text-3xl font-bold mb-6">Build one and prove us wrong (or right)</h3>
+          <h3 className="text-2xl md:text-3xl font-bold mb-6">Build one and share your numbers</h3>
           <p className="text-lg md:text-xl mb-10 text-white max-w-3xl mx-auto font-light leading-relaxed">
-            Nothing here has been built and measured yet. If you build a rig, fork the repo, log what it actually does,
-            and file your measurements against our pre-registered predictions.
+            Build one, log what it actually does, and share it: every measured build makes the next one better.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
@@ -115,11 +114,11 @@ export default function OpenSource() {
               <span>Fork on GitHub</span>
             </a>
             <a
-              href="#on-trial"
+              href="#calculator"
               className="flex items-center justify-center space-x-3 px-8 py-4 border-2 border-white text-white rounded-2xl hover:bg-white/10 transition-colors font-bold text-lg"
             >
               <ClipboardList className="w-6 h-6" />
-              <span>See the claims on trial</span>
+              <span>Run your numbers</span>
             </a>
           </div>
         </div>

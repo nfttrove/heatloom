@@ -1,19 +1,11 @@
 import Header from './components/Header';
 import Hero from './components/Hero';
-import Theory from './components/Theory';
-import SystemLayout from './components/SystemLayout';
+import HowItWorks from './components/HowItWorks';
 import BuildGuide from './components/BuildGuide';
-import Performance from './components/Performance';
+import Calculator from './components/Calculator';
 import Safety from './components/Safety';
-import FutureProofing from './components/FutureProofing';
+import OurNumbers from './components/OurNumbers';
 import OpenSource from './components/OpenSource';
-import ROI from './components/ROI';
-import Demo from './components/Demo';
-import EnergyFlow from './components/EnergyFlow';
-import Configurator from './components/Configurator';
-import Hybrid from './components/Hybrid';
-import WhyNoTurbine from './components/WhyNoTurbine';
-import OnTrial from './components/OnTrial';
 import Footer from './components/Footer';
 
 function App() {
@@ -21,19 +13,11 @@ function App() {
     <div className="min-h-screen bg-white">
       <Header />
       <Hero />
-      <Theory />
-      <SystemLayout />
-      <Demo />
-      <EnergyFlow />
+      <HowItWorks />
       <BuildGuide />
-      <Configurator />
-      <Hybrid />
-      <WhyNoTurbine />
-      <Performance />
-      <ROI />
+      <Calculator />
       <Safety />
-      <OnTrial />
-      <FutureProofing />
+      <OurNumbers />
       <OpenSource />
       <Footer />
     </div>

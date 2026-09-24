@@ -29,6 +29,16 @@ import {
   hybridPlan,
   hybridProductionKWhPerYear,
   formatGBP,
+  loomPlan,
+  DEFAULT_LOOM,
+  LOOM_CONTROLLER_PARTS,
+  LOOM_CONTROLLER_PARTS_GBP,
+  BOUGHT_DIVERTER_GBP,
+  TANK_ROUND_TRIP,
+  PV_GBP_PER_KWP,
+  COLLECTOR_GBP_PER_M2,
+  THERMAL_BOP_GBP,
+  type LoomInput,
   usefulHeatHalfLifeDays,
   storeRetention,
   WATER_STORE_GBP_PER_KWH,
@@ -505,5 +515,76 @@ describe("the verdict names what actually heats the house", () => {
     expect(hybridPlan({ ...DEFAULT_HYBRID, heatSource: "electric" }).decemberVerdict.text).toContain("the electric heating");
     expect(hybridPlan({ ...DEFAULT_HYBRID, heatSource: "heatPump" }).decemberVerdict.text).not.toContain("boiler");
     expect(hybridPlan(DEFAULT_HYBRID).decemberVerdict.text).toContain("the boiler");
+  });
+});
+
+describe("the Heat Loom build (panels + loom + tank, tubes optional)", () => {
+  const variants: LoomInput[] = [
+    DEFAULT_LOOM,
+    { ...DEFAULT_LOOM, controller: "none" },
+    { ...DEFAULT_LOOM, tubesM2: 3 },
+    { ...DEFAULT_LOOM, pvKwp: 8, pvSelfUse: 0.2, hotWaterKWhPerDay: 15, tankKWh: 6 },
+    { ...DEFAULT_LOOM, sun: 6, tubesM2: 6, heatSource: "electric" },
+  ];
+
+  it("every kWh the panels make goes to the house, the tank or the grid", () => {
+    for (const v of variants) {
+      const l = loomPlan(v);
+      expect(l.pv.houseKWh + l.pv.toTankKWh + l.pv.exportKWh).toBeCloseTo(l.pv.annualKWh, 6);
+      for (const m of l.monthly) {
+        expect(m.exportKWhPerDay).toBeGreaterThanOrEqual(-1e-9);
+        expect(m.houseKWhPerDay).toBeLessThanOrEqual(v.electricKWhPerDay + 1e-9);
+        // The tank never gives more hot water than is wanted or than it holds.
+        const hot = m.hotWaterFromPanelsKWhPerDay + m.hotWaterFromTubesKWhPerDay;
+        expect(hot).toBeLessThanOrEqual(Math.min(v.hotWaterKWhPerDay, v.tankKWh) + 1e-9);
+        expect(m.hotWaterFromPanelsKWhPerDay).toBeCloseTo(m.toTankKWhPerDay * TANK_ROUND_TRIP, 9);
+      }
+    }
+  });
+
+  it("without a controller nothing reaches the tank from the panels", () => {
+    const l = loomPlan({ ...DEFAULT_LOOM, controller: "none" });
+    expect(l.pv.toTankKWh).toBe(0);
+    expect(l.hotWater.fromPanelsKWh).toBe(0);
+    expect(l.economics.hotWaterSavingsGBP).toBe(0);
+  });
+
+  it("tubes heat the tank first, so they add winter hot water but little in summer", () => {
+    const plain = loomPlan(DEFAULT_LOOM);
+    const tubes = loomPlan({ ...DEFAULT_LOOM, tubesM2: 3 });
+    expect(tubes.hotWater.coverDecember).toBeGreaterThan(plain.hotWater.coverDecember);
+    expect(tubes.hotWater.fromPanelsKWh).toBeLessThan(plain.hotWater.fromPanelsKWh);
+    // The increment is small next to what the tubes cost — the page says so.
+    const add = tubes.economics.savingsGBP - plain.economics.savingsGBP;
+    expect(add).toBeGreaterThan(0);
+    expect(tubes.economics.tubesCostGBP / add).toBeGreaterThan(50);
+  });
+
+  it("costs are the sum of parts", () => {
+    expect(LOOM_CONTROLLER_PARTS_GBP).toBe(LOOM_CONTROLLER_PARTS.reduce((t, r) => t + r.gbp, 0));
+    expect(LOOM_CONTROLLER_PARTS_GBP).toBe(120);
+    expect(loomPlan(DEFAULT_LOOM).economics.costGBP).toBe(4 * PV_GBP_PER_KWP + LOOM_CONTROLLER_PARTS_GBP);
+    expect(loomPlan({ ...DEFAULT_LOOM, controller: "bought" }).economics.controllerCostGBP).toBe(BOUGHT_DIVERTER_GBP);
+    expect(loomPlan({ ...DEFAULT_LOOM, tubesM2: 3 }).economics.tubesCostGBP).toBe(3 * COLLECTOR_GBP_PER_M2 + THERMAL_BOP_GBP + 12 * WATER_STORE_GBP_PER_KWH);
+  });
+
+  it("savings: house electricity at the capped price, hot water at what heats it now", () => {
+    for (const v of variants) {
+      const l = loomPlan(v);
+      const heat = l.hotWater.fromPanelsKWh + l.hotWater.fromTubesKWh;
+      expect(l.economics.electricSavingsGBP).toBeCloseTo(l.pv.houseKWh * ELECTRICITY_GBP_PER_KWH, 9);
+      expect(l.economics.hotWaterSavingsGBP).toBeCloseTo(heat * HEAT_SOURCES[v.heatSource].gbpPerKWh, 9);
+      expect(l.economics.savingsGBP).toBeCloseTo(l.economics.electricSavingsGBP + l.economics.hotWaterSavingsGBP, 9);
+      expect(l.economics.pessimisticSavingsGBP).toBeLessThan(l.economics.savingsGBP);
+    }
+  });
+
+  it("the default build's headline figures, pinned", () => {
+    const l = loomPlan(DEFAULT_LOOM);
+    expect(l.economics.costGBP).toBe(2320);
+    expect(l.economics.savingsGBP).toBeCloseTo(504, 0);
+    expect(l.economics.paybackYears).toBeCloseTo(4.6, 1);
+    expect(l.hotWater.coverBestMonth).toBeCloseTo(1, 9);
+    expect(l.hotWater.coverDecember).toBeLessThan(0.35);
   });
 });

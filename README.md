@@ -1,21 +1,30 @@
 # Heat Loom
 
-**heatloom.com** — a concept site for DIY solar heat and storage. It began as
-a concentrating solar-thermal rig (mirror troughs, a hot sand store, a small
-ORC turbine); that design is retired as a house system, and the site now
-leads with the **Hybrid**: bought PV for electricity, commodity
-evacuated-tube collectors and a water store (a solar cylinder) for heat.
-Nothing has been built and measured yet.
+**heatloom.com** — an open-source DIY build: solar panels that power your
+home first, and a small controller (the "loom") that sends every spare unit
+into your hot-water tank instead of exporting it for nothing. Evacuated solar
+tubes on the same tank are an optional add-on.
 
-What makes this repo slightly unusual for a product site: the engineering
-numbers are **extracted, tested code**, not marketing copy. Prose figures
-are computed from the module at render time, so the copy cannot drift from
-the model.
+The default build (4 kWp of panels plus the DIY loom, on an existing
+cylinder) is about £2,320 in parts and saves about £500 a year against gas
+at October 2026 prices: a payback of under five years. The loom's hardware
+is specified; its firmware is not yet published (the open-source Mk2 PV
+Router and bought diverters do the same job meanwhile).
+
+Every figure on the site is computed from a tested model, not typed into
+the copy.
 
 ## The engineering module
 
-All configurator/ROI math lives in `src/utils/heatloom.ts` (pure functions,
-assumptions stated as constants, tested in `heatloom.test.ts`):
+All math lives in `src/utils/heatloom.ts` (pure functions, assumptions
+stated as constants, tested in `heatloom.test.ts`):
+
+- **The loom build** (`loomPlan`) — month by month: the house uses its
+  share of the panels' output, tubes (if any) heat the tank first, the loom
+  sends spare output into the tank up to the day's hot-water demand and the
+  tank's size (90% reaching the tap), and the rest is exported unpaid. Every
+  kWh is accounted for; savings value house electricity at the Ofgem cap
+  and hot water at what heats it now.
 
 - **Two loss chains** — the research rig's troughs: optics 0.88 × soiling
   0.96 × receiver 0.93 × storage 0.90 × pipework 0.85 ≈ **0.60**. The
@@ -51,21 +60,17 @@ assumptions stated as constants, tested in `heatloom.test.ts`):
   store is sized to about two days of its collector's best month.
 - **Rig costs from its own bill of materials** — the retired rig is priced
   from the Build Guide's parts list, not a guessed £/m².
-- **Toy balances** for the animated panels (Energy Flow, Demo) share the
-  same constants and are tested to conserve energy.
+- **Toy balances** (a heat-flow step and a rig day) from earlier animated
+  panels remain in the module, tested to conserve energy.
 
-## Site narrative
+## Site sections
 
-The site leads with the Hybrid and shows its economics as they are: against
-gas, the PV half does most of the earning and the thermal half takes several
-times longer to pay back; against direct electric heating, the heat half
-matters more. The
-original ORC electricity stage became ["Why we deleted our own
-turbine"](src/components/WhyNoTurbine.tsx) — a Carnot explainer. The
-registered claims are displayed as filed, with their hashes, in
-[OnTrial](src/components/OnTrial.tsx), next to what the corrected model now
-predicts (less). A [Safety](src/components/Safety.tsx) section covers
-concentrated sunlight, steam, fire and weight.
+Hero · How it works (diagram, why a tank) · The build (parts list, steps,
+tubes add-on) · Your numbers (calculator) · Safety · How we got these
+numbers · Open source. Earlier designs — the concentrating research rig with
+a sand store and an ORC turbine, and the tubes-plus-store "Hybrid" — remain
+in the model (and its tests) because the In Fini registry's filed claims
+were computed from them; they are no longer on the page.
 
 ## Honesty policy
 

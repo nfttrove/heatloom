@@ -14,12 +14,12 @@ export default function Footer() {
               <h3 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
                 Heat Loom
               </h3>
-              <p className="text-xs text-orange-400 font-medium tracking-wider">SOLAR THERMAL SYSTEM</p>
+              <p className="text-xs text-orange-400 font-medium tracking-wider">SOLAR POWER + HOT WATER</p>
             </div>
           </div>
 
           <p className="text-gray-300 mb-12 max-w-2xl mx-auto text-lg font-light">
-            Open-source solar heat and storage — modelled, pre-registered, not yet built
+            Open-source solar that powers your home and heats your water
           </p>
 
           {/* Links */}

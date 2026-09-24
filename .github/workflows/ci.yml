@@ -21,7 +21,7 @@ jobs:
       - name: bundle sanity (shipped UI actually present)
         run: |
           BUNDLE=$(ls dist/assets/index-*.js)
-          for m in "Heat Loom Configurator" "Dark December" "Loss Budget" "The Hybrid" "deleted our own turbine" "numbers are on trial"; do
+          for m in "The loom decides" "How it works" "Parts list" "Your numbers" "How we got these numbers" "Water hygiene (legionella)"; do
             grep -q "$m" "$BUNDLE" || { echo "MISSING FROM BUNDLE: $m"; exit 1; }
           done
       - name: build stamp matches the source (live-drift depends on it)

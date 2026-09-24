@@ -3,13 +3,11 @@ import { Github, Menu, X } from 'lucide-react';
 import SunLoomIcon from './SunLoomIcon';
 
 const LINKS = [
-  { href: '#hybrid', label: 'The Hybrid' },
-  { href: '#theory', label: 'How It Works' },
-  { href: '#configurator', label: 'Configurator' },
-  { href: '#build', label: 'Build Guide' },
-  { href: '#why-no-turbine', label: 'Why No Turbine' },
+  { href: '#how', label: 'How It Works' },
+  { href: '#build', label: 'The Build' },
+  { href: '#calculator', label: 'Your Numbers' },
   { href: '#safety', label: 'Safety' },
-  { href: '#on-trial', label: 'On Trial' },
+  { href: '#numbers', label: 'Our Numbers' },
 ];
 
 export default function Header() {
@@ -26,7 +24,7 @@ export default function Header() {
               <div className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
                 Heat Loom
               </div>
-              <p className="text-xs text-orange-500 font-medium tracking-wider">SOLAR THERMAL SYSTEM</p>
+              <p className="text-xs text-orange-500 font-medium tracking-wider">SOLAR POWER + HOT WATER</p>
             </div>
           </a>
 

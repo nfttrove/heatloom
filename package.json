@@ -33,6 +33,6 @@
     "vite": "^5.4.2",
     "vitest": "^4.1.11"
   },
-  "description": "Heat Loom \u2014 concentrating solar thermal with sand storage; honest engineering numbers for the configurator, with seasonal bands and a published loss budget",
+  "description": "Heat Loom — open-source DIY solar: panels power the home first and a small controller sends the spare into the hot-water tank; every figure computed from a tested model",
   "license": "MIT"
 }

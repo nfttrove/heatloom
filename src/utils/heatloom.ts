@@ -779,6 +779,200 @@ export function hybridProductionKWhPerYear(p: HybridInput = DEFAULT_HYBRID): num
 }
 
 // ---------------------------------------------------------------------------
+// The Heat Loom build: solar panels, a controller (the "loom") that sends
+// spare solar into the hot-water tank, and optional evacuated tubes on the
+// same tank. Hot water only: the radiators stay on the boiler.
+// ---------------------------------------------------------------------------
+
+/** Hot water, kWh of heat a day: the hot-water share of the default household's 30 kWh/day. */
+export const HOT_WATER_KWH_PER_DAY_DEFAULT = 30 * HOT_WATER_SHARE;
+
+/**
+ * The loom's parts. The first three are sourced from DIY diverter builds
+ * (Sep 2026, DIY Solar Power Forum parts lists: current clamp ~£17,
+ * microcontroller ~£10, zero-cross solid-state relay £16–24); the rest is
+ * our allowance. Connection and certification by a registered electrician
+ * is required and not priced.
+ */
+export const LOOM_CONTROLLER_PARTS = [
+  { item: "Current clamp", detail: "on the meter tails: sees import and export", gbp: 17 },
+  { item: "ESP32 board", detail: "runs the open-source firmware", gbp: 10 },
+  { item: "Solid-state relay", detail: "zero-cross, 25 A, switches the immersion heater", gbp: 24 },
+  { item: "Heatsink", detail: "the relay runs warm at 3 kW", gbp: 12 },
+  { item: "Tank sensor", detail: "DS18B20 probe for the hygiene cycle", gbp: 5 },
+  { item: "5 V supply", detail: "DIN-rail mounted", gbp: 15 },
+  { item: "Enclosure and fittings", detail: "IP-rated box, terminals, fuse", gbp: 37 },
+] as const;
+export const LOOM_CONTROLLER_PARTS_GBP = LOOM_CONTROLLER_PARTS.reduce((t, r) => t + r.gbp, 0);
+/** Panel size the parts list uses. */
+export const PANEL_WATTS = 400;
+/**
+ * Small generators connect under G98 when total inverter output is at most
+ * 16 A per phase (3.68 kW single-phase) and the network operator is told
+ * within 28 days; bigger systems need approval first under G99.
+ */
+export const G98_LIMIT_KW = 3.68;
+/** A bought diverter (iBoost, eddi class), fitted: £450–900 (BestBuilders 2026 guide). */
+export const BOUGHT_DIVERTER_GBP = 650;
+/** Heat put into the tank that reaches the tap: cylinder and pipe losses (as the tube chain's storage stage). */
+export const TANK_ROUND_TRIP = 0.9;
+
+export type Controller = "diy" | "bought" | "none";
+
+export interface LoomInput {
+  /** Household electricity, kWh/day. */
+  electricKWhPerDay: number;
+  /** Hot water, kWh of heat a day. */
+  hotWaterKWhPerDay: number;
+  pvKwp: number;
+  /** Share of the panels' output the house uses as it is made. */
+  pvSelfUse: number;
+  /** Sunshine on the tilt, kWh/m²/day (southern England ≈ 3). */
+  sun: number;
+  /** Optional evacuated tubes on the same tank, m² (0 = none). */
+  tubesM2: number;
+  /** Useful heat the hot-water tank holds, kWh (a 250 L cylinder ≈ 12). */
+  tankKWh: number;
+  heatSource: HeatSource;
+  controller: Controller;
+}
+
+export interface LoomMonth {
+  month: string;
+  pvKWhPerDay: number;
+  houseKWhPerDay: number;
+  /** Panel electricity sent to the tank. */
+  toTankKWhPerDay: number;
+  exportKWhPerDay: number;
+  /** Hot water met, kWh of heat a day, from each source. */
+  hotWaterFromPanelsKWhPerDay: number;
+  hotWaterFromTubesKWhPerDay: number;
+  hotWaterDemandKWhPerDay: number;
+}
+
+export interface LoomPlan {
+  pv: { annualKWh: number; houseKWh: number; toTankKWh: number; exportKWh: number };
+  hotWater: {
+    demandKWh: number;
+    fromPanelsKWh: number;
+    fromTubesKWh: number;
+    coverAnnual: number;
+    coverBestMonth: number;
+    coverDecember: number;
+  };
+  economics: {
+    costGBP: number;
+    pvCostGBP: number;
+    controllerCostGBP: number;
+    tubesCostGBP: number;
+    savingsGBP: number;
+    electricSavingsGBP: number;
+    hotWaterSavingsGBP: number;
+    paybackYears: number;
+    /** −10% sun and the low tube efficiency. */
+    pessimisticSavingsGBP: number;
+    pessimisticPaybackYears: number;
+    heatGBPPerKWh: number;
+  };
+  monthly: LoomMonth[];
+}
+
+export const DEFAULT_LOOM: LoomInput = {
+  electricKWhPerDay: 8,
+  hotWaterKWhPerDay: HOT_WATER_KWH_PER_DAY_DEFAULT,
+  pvKwp: 4,
+  pvSelfUse: 0.35,
+  sun: PV_REFERENCE_SUN_KWH_M2_DAY,
+  tubesM2: 0,
+  tankKWh: 12,
+  heatSource: "gas",
+  controller: "diy",
+};
+
+function loomScenario(p: LoomInput, sunScale: number, tubeEfficiency: number) {
+  const selfUse = Math.min(1, Math.max(0, p.pvSelfUse));
+  const pvDailyMean = (Math.max(0, p.pvKwp) * PV_KWH_PER_KWP_YEAR * (Math.max(0, p.sun) / PV_REFERENCE_SUN_KWH_M2_DAY) * sunScale) / 365;
+  const tubesDailyMean = Math.max(0, p.tubesM2) * Math.max(0, p.sun) * sunScale * tubeEfficiency;
+  const tank = Math.max(0, p.tankKWh);
+  const hw = Math.max(0, p.hotWaterKWhPerDay);
+  const months: LoomMonth[] = [];
+  let house = 0, toTank = 0, exp = 0, fromPanels = 0, fromTubes = 0;
+  for (let m = 0; m < 12; m++) {
+    const d = DAYS_IN_MONTH[m];
+    const pv = pvDailyMean * SOLAR_MONTHLY[m];
+    const houseDay = Math.min(Math.max(0, p.electricKWhPerDay), selfUse * pv);
+    // Tubes heat the tank first (their heat has no other use); the panels'
+    // spare fills what hot water is left, up to what the tank can hold.
+    const tubesDay = Math.min(hw, tubesDailyMean * SOLAR_MONTHLY[m], tank);
+    const room = Math.max(0, Math.min(hw, tank) - tubesDay);
+    const spare = pv - houseDay;
+    const panelsHeatDay = p.controller === "none" ? 0 : Math.min(room, spare * TANK_ROUND_TRIP);
+    const toTankDay = panelsHeatDay / TANK_ROUND_TRIP;
+    const exportDay = spare - toTankDay;
+    house += d * houseDay;
+    toTank += d * toTankDay;
+    exp += d * exportDay;
+    fromPanels += d * panelsHeatDay;
+    fromTubes += d * tubesDay;
+    months.push({
+      month: MONTHS[m],
+      pvKWhPerDay: pv,
+      houseKWhPerDay: houseDay,
+      toTankKWhPerDay: toTankDay,
+      exportKWhPerDay: exportDay,
+      hotWaterFromPanelsKWhPerDay: panelsHeatDay,
+      hotWaterFromTubesKWhPerDay: tubesDay,
+      hotWaterDemandKWhPerDay: hw,
+    });
+  }
+  return { house, toTank, exp, fromPanels, fromTubes, months, pvAnnual: pvDailyMean * 365 };
+}
+
+export function loomPlan(p: LoomInput): LoomPlan {
+  const heatPrice = HEAT_SOURCES[p.heatSource].gbpPerKWh;
+  const central = loomScenario(p, 1, HYBRID_COLLECTOR_EFFICIENCY);
+  const pessimistic = loomScenario(p, 0.9, HYBRID_EFFICIENCY_RANGE.low);
+  const value = (sc: ReturnType<typeof loomScenario>) =>
+    sc.house * ELECTRICITY_GBP_PER_KWH + sc.exp * EXPORT_GBP_PER_KWH + (sc.fromPanels + sc.fromTubes) * heatPrice;
+
+  const pvCost = Math.max(0, p.pvKwp) * PV_GBP_PER_KWP;
+  const controllerCost = p.controller === "diy" ? LOOM_CONTROLLER_PARTS_GBP : p.controller === "bought" ? BOUGHT_DIVERTER_GBP : 0;
+  // Tubes need a pump station and a twin-coil (solar) cylinder in place of a plain one.
+  const tubesCost = p.tubesM2 > 0 ? p.tubesM2 * COLLECTOR_GBP_PER_M2 + THERMAL_BOP_GBP + p.tankKWh * WATER_STORE_GBP_PER_KWH : 0;
+  const cost = pvCost + controllerCost + tubesCost;
+  const savings = value(central);
+  const pessimisticSavings = value(pessimistic);
+  const demand = Math.max(0, p.hotWaterKWhPerDay) * 365;
+  const covers = central.months.map((r) => (r.hotWaterFromPanelsKWhPerDay + r.hotWaterFromTubesKWhPerDay) / Math.max(r.hotWaterDemandKWhPerDay, 1e-9));
+
+  return {
+    pv: { annualKWh: central.pvAnnual, houseKWh: central.house, toTankKWh: central.toTank, exportKWh: central.exp },
+    hotWater: {
+      demandKWh: demand,
+      fromPanelsKWh: central.fromPanels,
+      fromTubesKWh: central.fromTubes,
+      coverAnnual: demand > 0 ? (central.fromPanels + central.fromTubes) / demand : 0,
+      coverBestMonth: Math.max(...covers),
+      coverDecember: covers[DECEMBER],
+    },
+    economics: {
+      costGBP: cost,
+      pvCostGBP: pvCost,
+      controllerCostGBP: controllerCost,
+      tubesCostGBP: tubesCost,
+      savingsGBP: savings,
+      electricSavingsGBP: central.house * ELECTRICITY_GBP_PER_KWH,
+      hotWaterSavingsGBP: (central.fromPanels + central.fromTubes) * heatPrice,
+      paybackYears: cost / Math.max(savings, 1),
+      pessimisticSavingsGBP: pessimisticSavings,
+      pessimisticPaybackYears: cost / Math.max(pessimisticSavings, 1),
+      heatGBPPerKWh: heatPrice,
+    },
+    monthly: central.months,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Toy balances for the animated panels (Energy Flow and the Demo)
 // ---------------------------------------------------------------------------
 
