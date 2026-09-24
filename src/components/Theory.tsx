@@ -5,6 +5,7 @@ import {
   SAND_CP_KJ_PER_KG_K,
   SAND_KG_PER_KWH,
   RIG_STORE_DELTA_T_K,
+  sandKgPerKWh,
   HYBRID_SAND_KG_PER_KWH,
   HYBRID_STORE_DELTA_T_K,
   HYBRID_STORE_TOP_C,
@@ -185,7 +186,7 @@ export default function Theory() {
                 </div>
                 <div className="text-gray-300 space-y-2 text-sm">
                   <p>c<sub>p</sub> = {SAND_CP_KJ_PER_KG_K} kJ/kg·K for dry sand</p>
-                  <p>Rig: ΔT = {RIG_STORE_DELTA_T_K} K → {SAND_KG_PER_KWH} kg/kWh</p>
+                  <p>Rig: ΔT = {RIG_STORE_DELTA_T_K} K → {SAND_KG_PER_KWH} kg/kWh (generous: an oil loop kept to about 300 °C gives ~{Math.round(sandKgPerKWh(280))} kg/kWh — see Safety)</p>
                   <p>Hybrid: ΔT = {HYBRID_STORE_DELTA_T_K} K → {HYBRID_SAND_KG_PER_KWH.toFixed(0)} kg/kWh</p>
                   <p>The store's 90% round trip sits in the loss chain, not here</p>
                 </div>

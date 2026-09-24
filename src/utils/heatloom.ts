@@ -409,10 +409,10 @@ export const LITHIUM_GBP_PER_KWH = 300;
  * electric — all from the sourced prices above.
  */
 export const HEAT_SOURCES = {
-  gas: { label: "Gas boiler", phrase: "a gas boiler", gbpPerKWh: GAS_GBP_PER_KWH / BOILER_EFFICIENCY },
-  oil: { label: "Oil boiler", phrase: "an oil boiler", gbpPerKWh: HEATING_OIL_GBP_PER_LITRE / KEROSENE_KWH_PER_LITRE / BOILER_EFFICIENCY },
-  heatPump: { label: "Heat pump (COP 3)", phrase: "a heat pump (COP 3)", gbpPerKWh: ELECTRICITY_GBP_PER_KWH / 3 },
-  electric: { label: "Direct electric heating", phrase: "direct electric heating", gbpPerKWh: ELECTRICITY_GBP_PER_KWH },
+  gas: { label: "Gas boiler", phrase: "a gas boiler", system: "boiler", gbpPerKWh: GAS_GBP_PER_KWH / BOILER_EFFICIENCY },
+  oil: { label: "Oil boiler", phrase: "an oil boiler", system: "boiler", gbpPerKWh: HEATING_OIL_GBP_PER_LITRE / KEROSENE_KWH_PER_LITRE / BOILER_EFFICIENCY },
+  heatPump: { label: "Heat pump (COP 3)", phrase: "a heat pump (COP 3)", system: "heat pump", gbpPerKWh: ELECTRICITY_GBP_PER_KWH / 3 },
+  electric: { label: "Direct electric heating", phrase: "direct electric heating", system: "electric heaters", gbpPerKWh: ELECTRICITY_GBP_PER_KWH },
 } as const;
 export type HeatSource = keyof typeof HEAT_SOURCES;
 /** Heat displaced, £/kWh-thermal (gas-ish) — the default. */
@@ -572,6 +572,7 @@ function runScenario(p: HybridInput, sunScale: number, efficiency: number, selfU
 export function hybridPlan(p: HybridInput): HybridPlan {
   const selfUse = Math.min(1, Math.max(0, p.pvSelfUse ?? PV_SELF_USE_DEFAULT));
   const heatPrice = HEAT_SOURCES[p.heatSource ?? "gas"].gbpPerKWh;
+  const heatSystem = HEAT_SOURCES[p.heatSource ?? "gas"].system;
   const central = runScenario(p, 1, HYBRID_COLLECTOR_EFFICIENCY, selfUse, heatPrice);
   const pessimistic = runScenario(p, 0.9, HYBRID_EFFICIENCY_RANGE.low, selfUse, heatPrice);
 
@@ -597,7 +598,7 @@ export function hybridPlan(p: HybridInput): HybridPlan {
   const heatWinter = central.decHeatCover;
   const serious = heatWinter < 0.5 || elWinter < 0.3;
   const pct = (x: number) => Math.round(100 * x);
-  const stays = [elWinter < 1 ? "the grid" : "", heatWinter < 1 ? "the boiler" : ""].filter(Boolean);
+  const stays = [elWinter < 1 ? "the grid" : "", heatWinter < 1 ? `the ${heatSystem}` : ""].filter(Boolean);
   const staysText = stays.length
     ? ` ${stays.join(" and ").replace(/^t/, "T")} ${stays.length > 1 ? "stay" : "stays"} part of an honest design — the hybrid buys down ${stays.length > 1 ? "their" : "its"} share, it does not retire ${stays.length > 1 ? "them" : "it"}.`
     : "";

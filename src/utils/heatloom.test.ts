@@ -452,3 +452,12 @@ describe("recheck round: copy conditions follow the model", () => {
     }
   });
 });
+
+describe("the verdict names what actually heats the house", () => {
+  it("says heat pump or electric heaters, not boiler, when those are selected", () => {
+    expect(hybridPlan({ ...DEFAULT_HYBRID, heatSource: "heatPump" }).decemberVerdict.text).toContain("the heat pump");
+    expect(hybridPlan({ ...DEFAULT_HYBRID, heatSource: "electric" }).decemberVerdict.text).toContain("the electric heaters");
+    expect(hybridPlan({ ...DEFAULT_HYBRID, heatSource: "heatPump" }).decemberVerdict.text).not.toContain("boiler");
+    expect(hybridPlan(DEFAULT_HYBRID).decemberVerdict.text).toContain("the boiler");
+  });
+});

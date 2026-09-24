@@ -9,6 +9,7 @@ import {
   SAND_CP_KJ_PER_KG_K,
   SAND_KG_PER_KWH,
   RIG_STORE_DELTA_T_K,
+  sandKgPerKWh,
   HYBRID_SAND_KG_PER_KWH,
   HYBRID_STORE_DELTA_T_K,
 } from '../utils/heatloom';
@@ -133,7 +134,7 @@ export default function Performance() {
                   </div>
                   <div className="text-gray-600 space-y-2 text-sm">
                     <p><strong>c<sub>p</sub></strong> = {SAND_CP_KJ_PER_KG_K} kJ/kg·K for dry sand</p>
-                    <p><strong>ΔT</strong> = {RIG_STORE_DELTA_T_K} K for the rig → {SAND_KG_PER_KWH} kg/kWh; {HYBRID_STORE_DELTA_T_K} K for the Hybrid → {HYBRID_SAND_KG_PER_KWH.toFixed(0)} kg/kWh</p>
+                    <p><strong>ΔT</strong> = {RIG_STORE_DELTA_T_K} K for the rig → {SAND_KG_PER_KWH} kg/kWh (generous: an oil loop kept to about 300 °C gives ~{Math.round(sandKgPerKWh(280))} kg/kWh); {HYBRID_STORE_DELTA_T_K} K for the Hybrid → {HYBRID_SAND_KG_PER_KWH.toFixed(0)} kg/kWh</p>
                     <p><strong>Losses</strong> = the store's 90% round trip is in the loss chain, not this formula</p>
                   </div>
                 </div>

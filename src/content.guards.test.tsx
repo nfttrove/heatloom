@@ -29,19 +29,22 @@ const section = (id: string) => {
 };
 // Everything that ships, including text that only renders after a click and
 // attribute values (titles, aria-labels) that the first render strips.
-// JSX wraps prose across lines and splits it with {' '}, so collapse both.
+// JSX wraps prose across lines, splits it with {' '} and wraps words in
+// inline tags (<em>, <strong>…), so collapse all three. The phrases are the
+// old sentences' distinctive wording, so an honest "no field test yet" passes.
 const SOURCE = (
   Object.values(
     import.meta.glob(["./components/*.tsx", "./App.tsx", "./utils/heatloom.ts"], { query: "?raw", import: "default", eager: true })
   ).join("\n") as string
 )
   .replace(/\{\s*['"`]\s*['"`]\s*\}/g, " ")
+  .replace(/<\/?(?:em|strong|b|i|span|a|sub|sup|code)(?:\s[^>]*)?>/g, "")
   .replace(/\s+/g, " ");
 
 describe("claims the evidence does not support stay off the page", () => {
   // Each of these was on the live site before the 2026-09 honesty sweep.
   const RETIRED = [
-    "Field Test", // no rig has been built; Spain figures are modelled
+    "Spain Field Test", // no rig has been built; Spain figures are modelled
     "actual field testing",
     "Field Prototype",
     "2.1k", // invented GitHub star count
@@ -56,7 +59,7 @@ describe("claims the evidence does not support stay off the page", () => {
     "~£10 per kWh",
     "25+ year",
     "Complete CAD drawings",
-    "Video tutorials",
+    "Video tutorials and live builds",
     "Solar Thermal Revolution",
     "AI-driven",
     "industrial-grade",

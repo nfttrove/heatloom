@@ -89,12 +89,12 @@ export default function Hybrid() {
   const tiersKeepBoiler = tiers.every((t) => t.plan.coverage.heatWinter < 1);
   const tiersKeepGrid = tiers.every((t) => t.plan.coverage.electricWinter < 1);
   const honestyColumn = [
-    tiersKeepBoiler ? 'at these settings no tier retires your boiler' : 'at these settings a tier can cover December heat',
+    tiersKeepBoiler ? `at these settings no tier retires your ${HEAT_SOURCES[cfg.heatSource ?? 'gas'].system}` : 'at these settings a tier can cover December heat',
     tiersKeepGrid ? 'all three keep the grid' : 'a tier can cover December electricity',
   ].join(', and ');
   const heatPriceNote =
     cfg.heatSource === 'oil'
-      ? `kerosene at ${(HEATING_OIL_GBP_PER_LITRE * 100).toFixed(1)}p a litre (September 2026 average, 1,000-litre orders) through a ${Math.round(BOILER_EFFICIENCY * 100)}% boiler`
+      ? `kerosene at ${(HEATING_OIL_GBP_PER_LITRE * 100).toFixed(1)}p a litre including VAT (the September 2026 average for 1,000-litre orders) through a ${Math.round(BOILER_EFFICIENCY * 100)}% boiler`
       : cfg.heatSource === 'heatPump' || cfg.heatSource === 'electric'
         ? `the same capped electricity price${cfg.heatSource === 'heatPump' ? ', divided by a COP of 3' : ''}`
         : `Ofgem's capped gas price, ${(GAS_GBP_PER_KWH * 100).toFixed(1)}p, through a ${Math.round(BOILER_EFFICIENCY * 100)}% boiler`;
@@ -157,7 +157,7 @@ export default function Hybrid() {
               {plan.thermal.storeLimitedKWh >= 1
                 ? ` — less than a sunny day, so it caps how much heat reaches the house: a bigger store would add up to about ${Math.round(plan.thermal.storeLimitedKWh).toLocaleString('en-GB')} kWh a year. (The model sends every kWh through the store, which is pessimistic for small stores: some heat is used as it is collected.)`
                 : plan.thermal.storeDaysOfPeakCollection < 1
-                  ? ' — less than a sunny day, but at this demand the house takes the heat as fast as it comes, so a bigger store adds cost, not coverage.'
+                  ? ' — less than a sunny day, but in the months when the tubes collect more than it holds, the house needs less than it holds, so a bigger store adds cost, not coverage.'
                   : '; past one or two, a bigger store adds cost, not coverage.'}
             </p>
           </div>
