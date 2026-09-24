@@ -17,7 +17,7 @@ const CARDS = [
     icon: <Cpu className="w-8 h-8 text-white" />,
     box: 'from-orange-500 to-red-500',
     title: 'The loom decides',
-    text: `A small open-source controller (about ${formatGBP(LOOM_CONTROLLER_PARTS_GBP)} of parts) watches your meter. When the panels make more than the house needs, it sends the spare to your hot-water tank instead of the grid.`,
+    text: `A small open-source controller you build (about ${formatGBP(LOOM_CONTROLLER_PARTS_GBP)} of parts), designed to watch your meter and, when the panels make more than the house needs, send the spare to your hot-water tank instead of the grid.`,
   },
   {
     icon: <Droplets className="w-8 h-8 text-white" />,
@@ -43,8 +43,8 @@ export default function Hero() {
             <span className="bg-gradient-to-r from-orange-600 via-red-600 to-orange-700 bg-clip-text text-transparent">Heat Loom</span>
           </h1>
           <p className="text-xl md:text-2xl text-gray-700 mb-12 max-w-4xl mx-auto leading-relaxed font-light">
-            Solar panels that power your home first — and turn every spare unit into hot water, instead of giving it to the
-            grid for nothing.
+            Solar panels that power your home first — and turn the spare into hot water, instead of giving it to the grid
+            for nothing.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto mb-6">
@@ -64,7 +64,7 @@ export default function Hero() {
           <p className="text-gray-500 text-xs max-w-3xl mx-auto mb-12">
             Modelled for a southern England home that heats its water with gas, at October 2026 prices. In a poor year:{' '}
             {formatGBP(E.pessimisticSavingsGBP)} and {E.pessimisticPaybackYears.toFixed(1)} years. Parts only — the electrician
-            who connects it is extra.
+            who connects it and the scaffold for the roof are extra.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

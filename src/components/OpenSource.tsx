@@ -4,10 +4,10 @@ const REPO = 'https://github.com/nfttrove/heatloom';
 
 // What exists today, and what does not yet — stated plainly.
 const HAVE = [
-  'This website and its tested model (MIT)',
+  'This website (MIT)',
   "The loom's parts list and the build steps",
   'Every price and assumption, stated in code with its source',
-  'Predictions filed in the In Fini claim registry',
+  'The model behind every figure, with its tests',
 ];
 const NOT_YET = [
   "The loom's firmware and wiring diagram",

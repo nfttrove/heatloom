@@ -1,15 +1,16 @@
 # Heat Loom
 
 **heatloom.com** — an open-source DIY build: solar panels that power your
-home first, and a small controller (the "loom") that sends every spare unit
-into your hot-water tank instead of exporting it for nothing. Evacuated solar
+home first, and a small controller (the "loom") that sends the spare into
+your hot-water tank instead of exporting it for nothing. Evacuated solar
 tubes on the same tank are an optional add-on.
 
 The default build (4 kWp of panels plus the DIY loom, on an existing
-cylinder) is about £2,320 in parts and saves about £500 a year against gas
-at October 2026 prices: a payback of under five years. The loom's hardware
-is specified; its firmware is not yet published (the open-source Mk2 PV
-Router and bought diverters do the same job meanwhile).
+cylinder) is about £2,400 in parts and saves about £485 a year against gas
+at October 2026 prices: a payback of about five years. The loom's parts and
+build steps are specified; its firmware and wiring diagram are still to be
+written (the open-source Mk2 PV Router and bought diverters do the job
+meanwhile).
 
 Every figure on the site is computed from a tested model, not typed into
 the copy.
@@ -48,7 +49,8 @@ stated as constants, tested in `heatloom.test.ts`):
   heat demand (hot water plus heating degree days) replace a single winter
   factor.
 - **Savings you can actually bank** — PV counts only the share used at home
-  (50% by default; a DIY install earns no export payment), heat counts only
+  (35% by default for the loom build, between a fifth and 60% of the day's
+  electricity; a DIY install earns no export payment), heat counts only
   what meets each month's demand, valued at what it displaces (gas by
   default; oil, heat pump or direct electric are options). Prices are
   sourced: Ofgem's October–December 2026 cap for electricity and gas, a

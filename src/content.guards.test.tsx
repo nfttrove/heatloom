@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { renderToString } from "react-dom/server";
 import App from "./App";
-import { loomPlan, DEFAULT_LOOM, formatGBP } from "./utils/heatloom";
+import { loomPlan, DEFAULT_LOOM, formatGBP, type LoomInput } from "./utils/heatloom";
+import Calculator from "./components/Calculator";
 
 // The whole page as a visitor's browser receives it, with entities decoded
 // so assertions match the words people read.
@@ -66,6 +67,9 @@ describe("claims the evidence does not support stay off the page", () => {
     "real-time energy generation",
     "Thermosiphon design eliminates pumps",
     "cheapest component to oversize",
+    "runs the open-source firmware", // the loom's firmware is not written yet
+    "not published yet",
+    "every spare unit", // some spare is still exported when the tank is full
   ];
   for (const phrase of RETIRED) {
     it(`does not say "${phrase}", rendered or in the shipped source`, () => {
@@ -117,8 +121,8 @@ describe("the page says what it must", () => {
     expect(section("numbers")).toContain(`The default build: ${cost}, saving ${saves} a year — ${pay} years`);
   });
 
-  it("says plainly that the loom's firmware isn't published yet", () => {
-    expect(section("build")).toContain("the Heat Loom firmware is not published yet");
+  it("says plainly that the loom's firmware isn't written yet", () => {
+    expect(section("build")).toContain("the loom's firmware and wiring diagram are still to be written");
     expect(section("open-source")).toContain("The loom's firmware and wiring diagram");
   });
 });
@@ -155,6 +159,37 @@ describe("page structure", () => {
       const wrapped = before.lastIndexOf("<label") > before.lastIndexOf("</label>");
       const labelled = /\saria-label="[^"]+"/.test(tag) || (id !== undefined && HTML.includes(`for="${id}"`)) || wrapped;
       expect(labelled, tag.slice(0, 80)).toBe(true);
+    }
+  });
+});
+
+describe("calculator copy in non-default states", () => {
+  const render = (initial: Partial<LoomInput>) => toText(renderToString(<Calculator initial={initial} />));
+
+  it("only says the panels fill the tank when, without tubes, they do", () => {
+    expect(render({ tubesM2: 3 })).toContain("the panels alone already fill the tank in the sunniest month");
+    const noLoom = render({ tubesM2: 3, controller: "none" });
+    expect(noLoom).not.toContain("already fill the tank");
+    expect(noLoom).toContain("The tubes provide");
+    expect(render({ tubesM2: 3, hotWaterKWhPerDay: 12 })).not.toContain("already fill the tank");
+  });
+
+  it("names the right extras and the clipping that grows with the array", () => {
+    expect(render({ tubesM2: 3 })).toContain("the plumber and G3 installer for the solar cylinder");
+    expect(render({})).toContain("a new cylinder if you don't have one");
+    const big = render({ pvKwp: 8 });
+    expect(big).toContain("G99");
+    expect(big).toContain("clipping on bright days, which grows with the array");
+    expect(render({ pvKwp: 3.6 })).not.toContain("G99");
+  });
+
+  it("renders no broken numbers at the slider extremes", () => {
+    for (const initial of [
+      { pvKwp: 0.4, pvSelfUse: 0.2, sun: 1, electricKWhPerDay: 2, hotWaterKWhPerDay: 2, tankKWh: 6 },
+      { pvKwp: 8, pvSelfUse: 0.8, sun: 6, electricKWhPerDay: 25, hotWaterKWhPerDay: 15, tankKWh: 30, tubesM2: 6 },
+      { controller: "none" as const, tubesM2: 0 },
+    ]) {
+      expect(render(initial)).not.toMatch(/\bNaN\b|\bundefined\b|\bInfinity\b/);
     }
   });
 });

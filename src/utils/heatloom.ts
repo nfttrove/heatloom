@@ -795,15 +795,30 @@ export const HOT_WATER_KWH_PER_DAY_DEFAULT = 30 * HOT_WATER_SHARE;
  * is required and not priced.
  */
 export const LOOM_CONTROLLER_PARTS = [
-  { item: "Current clamp", detail: "on the meter tails: sees import and export", gbp: 17 },
-  { item: "ESP32 board", detail: "runs the open-source firmware", gbp: 10 },
+  { item: "Current clamp", detail: "on the meter tails: measures the current", gbp: 17 },
+  { item: "AC voltage adapter", detail: "plug-in, 9 V AC: gives the mains phase, so the loom can tell import from export", gbp: 10 },
+  { item: "Sensing board", detail: "burden resistor and voltage divider for the ESP32's inputs", gbp: 8 },
+  { item: "ESP32 board", detail: "the loom's brain (firmware to come)", gbp: 10 },
   { item: "Solid-state relay", detail: "zero-cross, 25 A, switches the immersion heater", gbp: 24 },
-  { item: "Heatsink", detail: "the relay runs warm at 3 kW", gbp: 12 },
+  { item: "Heatsink", detail: "sized for the relay's 15–20 W at 3 kW", gbp: 12 },
   { item: "Tank sensor", detail: "DS18B20 probe for the hygiene cycle", gbp: 5 },
   { item: "5 V supply", detail: "DIN-rail mounted", gbp: 15 },
-  { item: "Enclosure and fittings", detail: "IP-rated box, terminals, fuse", gbp: 37 },
+  { item: "Double-pole isolator", detail: "for the immersion feed: a relay is not an isolator", gbp: 15 },
+  { item: "Enclosure and fittings", detail: "ventilated IP-rated box, terminals, fuse", gbp: 37 },
 ] as const;
 export const LOOM_CONTROLLER_PARTS_GBP = LOOM_CONTROLLER_PARTS.reduce((t, r) => t + r.gbp, 0);
+/** The panels' own AC isolator and RCBO (allowance). */
+export const PV_AC_FITTINGS_GBP = 45;
+/**
+ * When the house uses the panels' output. The slider sets the share of
+ * output used as it is made, within two limits (assumptions, not
+ * measurements): the house takes at least its daytime base load — about a
+ * fifth of a day's electricity (fridge, standby, daytime appliances) — when
+ * the panels make that much, and at most 60% of a day's electricity is used
+ * while the sun is up; the rest is used after dark.
+ */
+export const DAYTIME_BASE_SHARE = 0.2;
+export const DAYTIME_MAX_SHARE = 0.6;
 /** Panel size the parts list uses. */
 export const PANEL_WATTS = 400;
 /**
@@ -900,7 +915,8 @@ function loomScenario(p: LoomInput, sunScale: number, tubeEfficiency: number) {
   for (let m = 0; m < 12; m++) {
     const d = DAYS_IN_MONTH[m];
     const pv = pvDailyMean * SOLAR_MONTHLY[m];
-    const houseDay = Math.min(Math.max(0, p.electricKWhPerDay), selfUse * pv);
+    const elec = Math.max(0, p.electricKWhPerDay);
+    const houseDay = Math.min(pv, DAYTIME_MAX_SHARE * elec, Math.max(selfUse * pv, DAYTIME_BASE_SHARE * elec));
     // Tubes heat the tank first (their heat has no other use); the panels'
     // spare fills what hot water is left, up to what the tank can hold.
     const tubesDay = Math.min(hw, tubesDailyMean * SOLAR_MONTHLY[m], tank);
@@ -935,7 +951,7 @@ export function loomPlan(p: LoomInput): LoomPlan {
   const value = (sc: ReturnType<typeof loomScenario>) =>
     sc.house * ELECTRICITY_GBP_PER_KWH + sc.exp * EXPORT_GBP_PER_KWH + (sc.fromPanels + sc.fromTubes) * heatPrice;
 
-  const pvCost = Math.max(0, p.pvKwp) * PV_GBP_PER_KWP;
+  const pvCost = p.pvKwp > 0 ? p.pvKwp * PV_GBP_PER_KWP + PV_AC_FITTINGS_GBP : 0;
   const controllerCost = p.controller === "diy" ? LOOM_CONTROLLER_PARTS_GBP : p.controller === "bought" ? BOUGHT_DIVERTER_GBP : 0;
   // Tubes need a pump station and a twin-coil (solar) cylinder in place of a plain one.
   const tubesCost = p.tubesM2 > 0 ? p.tubesM2 * COLLECTOR_GBP_PER_M2 + THERMAL_BOP_GBP + p.tankKWh * WATER_STORE_GBP_PER_KWH : 0;

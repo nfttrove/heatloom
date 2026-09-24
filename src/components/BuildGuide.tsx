@@ -6,6 +6,7 @@ import {
   LOOM_CONTROLLER_PARTS_GBP,
   PANEL_WATTS,
   PV_GBP_PER_KWP,
+  PV_AC_FITTINGS_GBP,
   G98_LIMIT_KW,
   COLLECTOR_GBP_PER_M2,
   THERMAL_BOP_GBP,
@@ -20,12 +21,12 @@ const WITH_TUBES = loomPlan({ ...DEFAULT_LOOM, tubesM2: TUBES_M2 });
 
 const STEPS = [
   { title: 'Check the roof and the tank', text: `About ${Math.round(PANELS * 2)} m² of roof facing roughly south (east or west works, with less output), and a hot-water cylinder with an immersion heater. On a combi boiler there is no tank: add a cylinder (a qualified installer's job) or build the panels alone.`, icon: <CheckCircle className="w-5 h-5" /> },
-  { title: 'Size it for G98', text: `Choose microinverters totalling no more than ${G98_LIMIT_KW} kW. Then it connects first and you tell the network operator within 28 days; anything bigger needs their approval before you start.`, icon: <Package className="w-5 h-5" /> },
+  { title: 'Size it for G98', text: `Choose type-tested microinverters (on the ENA register) totalling no more than ${G98_LIMIT_KW} kW. Then it connects first and you tell the network operator within 28 days; anything bigger needs their approval before you start.`, icon: <Package className="w-5 h-5" /> },
   { title: 'Mount the panels', text: `${PANELS} × ${PANEL_WATTS} W panels on roof hooks and rails, from a scaffold — not a ladder.`, icon: <Sun className="w-5 h-5" /> },
-  { title: 'Wire the microinverters', text: 'One microinverter per panel or pair, joined by the AC trunk cable. A registered electrician connects it to its own breaker and certifies it.', icon: <Wrench className="w-5 h-5" /> },
-  { title: 'Build the loom', text: 'Current clamp on the meter tails, ESP32, solid-state relay on its heatsink, tank sensor and 5 V supply, all in one enclosure.', icon: <Cpu className="w-5 h-5" /> },
-  { title: 'Connect it to the immersion', text: "The loom switches the immersion heater's supply. This is mains work on a 3 kW circuit: the electrician connects and tests it.", icon: <Hammer className="w-5 h-5" /> },
-  { title: 'Commission', text: 'On a sunny day with the tank cool, the meter should show almost no export while the tank heats. Set the weekly 60 °C hygiene cycle.', icon: <Droplets className="w-5 h-5" /> },
+  { title: 'Wire the microinverters', text: 'One microinverter per panel or pair, joined by the AC trunk cable, through an AC isolator. A registered electrician connects it to its own RCBO and certifies it.', icon: <Wrench className="w-5 h-5" /> },
+  { title: 'Build the loom', text: 'Current clamp on the meter tails and an AC voltage adapter (together they tell import from export), ESP32, solid-state relay on its heatsink, tank sensor and 5 V supply, in one ventilated enclosure.', icon: <Cpu className="w-5 h-5" /> },
+  { title: 'Connect it to the immersion', text: "The loom switches the immersion heater's supply, after a double-pole isolator and with the tank's thermostat left in circuit. This is mains work on a 3 kW circuit: the electrician connects and tests it.", icon: <Hammer className="w-5 h-5" /> },
+  { title: 'Commission', text: "On a sunny day with the tank cool, the meter should show almost no export while the tank heats. Set the boiler to heat water in the evening, after the sun, so the panels get first go, and run a weekly 60 °C hygiene cycle (an immersion timer does this until the loom's firmware can).", icon: <Droplets className="w-5 h-5" /> },
 ];
 
 export default function BuildGuide() {
@@ -53,7 +54,8 @@ export default function BuildGuide() {
                   <span className="font-bold text-orange-600 whitespace-nowrap">{formatGBP(PLAN.economics.pvCostGBP)}</span>
                 </div>
                 <p className="text-gray-600 text-sm">
-                  {PANELS} × {PANEL_WATTS} W panels, microinverters, roof hooks, rails and cable ({formatGBP(PV_GBP_PER_KWP)} per kWp)
+                  {PANELS} × {PANEL_WATTS} W panels, microinverters, roof hooks, rails and cable ({formatGBP(PV_GBP_PER_KWP)} per
+                  kWp), plus an AC isolator and RCBO ({formatGBP(PV_AC_FITTINGS_GBP)})
                 </p>
               </div>
               <div className="bg-white p-5 rounded-2xl border border-orange-200">
@@ -121,9 +123,9 @@ export default function BuildGuide() {
               <div>
                 <h3 className="text-xl font-bold text-gray-900 mb-3">Where the loom is up to</h3>
                 <p className="text-gray-700 leading-relaxed">
-                  The hardware design is above; the Heat Loom firmware is not published yet. The job it does is proven: the
-                  open-source Mk2 PV Router and bought diverters work the same way, and either gives the same savings until
-                  the loom's firmware is ready. Read the Safety section before you start.
+                  The parts list and build steps are above; the loom's firmware and wiring diagram are still to be written.
+                  The job it does is proven: the open-source Mk2 PV Router and bought diverters do it today, and either gives
+                  the same savings in the meantime. Read the Safety section before you start.
                 </p>
               </div>
             </div>

@@ -36,6 +36,9 @@ import {
   BOUGHT_DIVERTER_GBP,
   TANK_ROUND_TRIP,
   PV_GBP_PER_KWP,
+  PV_AC_FITTINGS_GBP,
+  DAYTIME_BASE_SHARE,
+  DAYTIME_MAX_SHARE,
   COLLECTOR_GBP_PER_M2,
   THERMAL_BOP_GBP,
   type LoomInput,
@@ -562,8 +565,10 @@ describe("the Heat Loom build (panels + loom + tank, tubes optional)", () => {
 
   it("costs are the sum of parts", () => {
     expect(LOOM_CONTROLLER_PARTS_GBP).toBe(LOOM_CONTROLLER_PARTS.reduce((t, r) => t + r.gbp, 0));
-    expect(LOOM_CONTROLLER_PARTS_GBP).toBe(120);
-    expect(loomPlan(DEFAULT_LOOM).economics.costGBP).toBe(4 * PV_GBP_PER_KWP + LOOM_CONTROLLER_PARTS_GBP);
+    expect(LOOM_CONTROLLER_PARTS_GBP).toBe(153);
+    // A current clamp alone can't tell import from export: the parts need a voltage reference.
+    expect(LOOM_CONTROLLER_PARTS.some((r) => /voltage/i.test(r.item))).toBe(true);
+    expect(loomPlan({ ...DEFAULT_LOOM, pvKwp: 0 }).economics.pvCostGBP).toBe(0);
     expect(loomPlan({ ...DEFAULT_LOOM, controller: "bought" }).economics.controllerCostGBP).toBe(BOUGHT_DIVERTER_GBP);
     expect(loomPlan({ ...DEFAULT_LOOM, tubesM2: 3 }).economics.tubesCostGBP).toBe(3 * COLLECTOR_GBP_PER_M2 + THERMAL_BOP_GBP + 12 * WATER_STORE_GBP_PER_KWH);
   });
@@ -581,10 +586,25 @@ describe("the Heat Loom build (panels + loom + tank, tubes optional)", () => {
 
   it("the default build's headline figures, pinned", () => {
     const l = loomPlan(DEFAULT_LOOM);
-    expect(l.economics.costGBP).toBe(2320);
-    expect(l.economics.savingsGBP).toBeCloseTo(504, 0);
-    expect(l.economics.paybackYears).toBeCloseTo(4.6, 1);
+    expect(l.economics.costGBP).toBe(4 * PV_GBP_PER_KWP + PV_AC_FITTINGS_GBP + LOOM_CONTROLLER_PARTS_GBP);
+    expect(l.economics.costGBP).toBe(2398);
+    expect(l.economics.savingsGBP).toBeCloseTo(485, 0);
+    expect(l.economics.paybackYears).toBeCloseTo(l.economics.costGBP / l.economics.savingsGBP, 12);
+    expect(l.economics.paybackYears).toBeCloseTo(4.9, 1);
+    expect(l.economics.pessimisticPaybackYears).toBeCloseTo(l.economics.costGBP / l.economics.pessimisticSavingsGBP, 12);
+    expect(l.economics.pessimisticPaybackYears).toBeCloseTo(5.2, 1);
+    // The page says the panels alone fill the tank in the sunniest month.
     expect(l.hotWater.coverBestMonth).toBeCloseTo(1, 9);
-    expect(l.hotWater.coverDecember).toBeLessThan(0.35);
+    expect(l.hotWater.coverDecember).toBeLessThan(0.3);
+  });
+
+  it("the house uses at least its daytime base load and at most 60% of its day from the panels", () => {
+    for (const v of variants) {
+      for (const m of loomPlan(v).monthly) {
+        expect(m.houseKWhPerDay).toBeLessThanOrEqual(DAYTIME_MAX_SHARE * v.electricKWhPerDay + 1e-9);
+        expect(m.houseKWhPerDay).toBeGreaterThanOrEqual(Math.min(m.pvKWhPerDay, DAYTIME_BASE_SHARE * v.electricKWhPerDay) - 1e-9);
+        expect(m.houseKWhPerDay).toBeLessThanOrEqual(m.pvKWhPerDay + 1e-9);
+      }
+    }
   });
 });

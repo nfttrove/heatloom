@@ -5,17 +5,17 @@ const HAZARDS = [
   {
     icon: <HardHat className="w-6 h-6" />,
     title: 'Working at height',
-    text: 'Falls from roofs are the biggest risk in any solar job. Work from a scaffold with edge protection, never a ladder alone, and keep people out of the drop zone below.',
+    text: 'Falls from roofs are the biggest risk in any solar job. Work from a scaffold with edge protection, never a ladder alone, and keep people out of the drop zone below. Check with building control whether your roof work needs notifying.',
   },
   {
     icon: <Zap className="w-6 h-6" />,
     title: 'Electricity',
-    text: `Panels are live whenever light falls on them and cannot be switched off; microinverters keep the high-voltage DC short and on the roof. A registered electrician connects the system to its own breaker with RCD protection and certifies it under Part P. Tell the network operator within 28 days (G98, up to ${G98_LIMIT_KW} kW of inverter output).`,
+    text: `Panels are live whenever light falls on them and cannot be switched off; with microinverters each panel's DC stays at about 40–50 V on the roof, with no high-voltage string. A registered electrician connects the system to its own breaker with RCD protection and certifies it under Part P. Tell the network operator within 28 days (G98: type-tested microinverters, up to ${G98_LIMIT_KW} kW of inverter output).`,
   },
   {
     icon: <Cpu className="w-6 h-6" />,
     title: 'The loom switches mains power',
-    text: "It controls a 3 kW immersion heater. Mount the relay on its heatsink inside an earthed or insulated IP-rated enclosure, fuse it correctly, and keep the tank's own thermostat and cut-out in circuit, so the loom can only ever give the tank less heat than they allow. The electrician connects and tests it.",
+    text: "It controls a 3 kW immersion heater. The relay dissipates 15–20 W: mount it on its heatsink in a ventilated, earthed or insulated enclosure, and fuse it correctly. A solid-state relay is not an isolator — it leaks when off and usually fails switched on — so fit a double-pole isolator on the immersion feed, and keep the tank's own thermostat and cut-out in circuit so the loom can never give the tank more heat than they allow. The electrician connects and tests it.",
   },
   {
     icon: <Droplets className="w-6 h-6" />,
@@ -35,7 +35,7 @@ const HAZARDS = [
 ];
 
 const CHECKLISTS = [
-  { category: 'Electrical', icon: <Zap className="w-7 h-7" />, box: 'bg-gradient-to-br from-yellow-400 to-orange-500', dot: 'bg-orange-500', items: ['Own breaker with RCD protection', 'Electrician-certified connection (Part P)', 'G98 notification to the network operator', 'Loom in an IP-rated enclosure, relay on its heatsink'] },
+  { category: 'Electrical', icon: <Zap className="w-7 h-7" />, box: 'bg-gradient-to-br from-yellow-400 to-orange-500', dot: 'bg-orange-500', items: ['Own RCBO and an AC isolator for the panels', 'Electrician-certified connection (Part P)', 'Type-tested microinverters; G98 notification', 'Double-pole isolator on the immersion feed', 'Loom in a ventilated enclosure, relay on its heatsink'] },
   { category: 'Hot water', icon: <Droplets className="w-7 h-7" />, box: 'bg-gradient-to-br from-red-400 to-red-600', dot: 'bg-red-500', items: ['Tank thermostat and cut-out left in circuit', 'Weekly 60 °C hygiene cycle', 'Mixing valve rated for the tank', 'Relief-valve discharge through a tundish to a safe, visible place'] },
   { category: 'Roof', icon: <HardHat className="w-7 h-7" />, box: 'bg-gradient-to-br from-green-400 to-green-600', dot: 'bg-green-500', items: ['Scaffold with edge protection', 'Roof hooks fixed to rafters, not battens', 'Weatherproofed cable entry'] },
 ];

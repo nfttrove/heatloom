@@ -38,8 +38,8 @@ function Slider({
   );
 }
 
-export default function Calculator() {
-  const [cfg, setCfg] = useState<LoomInput>(DEFAULT_LOOM);
+export default function Calculator({ initial }: { initial?: Partial<LoomInput> } = {}) {
+  const [cfg, setCfg] = useState<LoomInput>({ ...DEFAULT_LOOM, ...initial });
   const set = (patch: Partial<LoomInput>) => setCfg((c) => ({ ...c, ...patch }));
   const plan = loomPlan(cfg);
   const e = plan.economics;
@@ -143,7 +143,7 @@ export default function Calculator() {
               <p className="text-gray-600 text-sm">
                 Worth {formatGBP(e.hotWaterSavingsGBP)} a year against {HEAT_SOURCES[cfg.heatSource].phrase}.
                 {cfg.tubesM2 > 0 &&
-                  ` The tubes provide ${kwh(plan.hotWater.fromTubesKWh)} kWh of it; with the panels already filling the tank in summer they add ${formatGBP(tubesAdd)} a year for ${formatGBP(e.tubesCostGBP)}.`}
+                  ` The tubes provide ${kwh(plan.hotWater.fromTubesKWh)} kWh of it and add ${formatGBP(tubesAdd)} a year for ${formatGBP(e.tubesCostGBP)}${noTubes.hotWater.coverBestMonth >= 0.999 ? ': the panels alone already fill the tank in the sunniest month' : ''}.`}
               </p>
             </div>
 
@@ -158,8 +158,8 @@ export default function Calculator() {
               <p className="text-gray-500 text-xs mt-3 leading-relaxed">
                 Electricity at Ofgem's October–December 2026 cap ({(ELECTRICITY_GBP_PER_KWH * 100).toFixed(1)}p); exports earn nothing on a DIY
                 install. Poor year: 10% less sun{cfg.tubesM2 > 0 ? ' and less efficient tubes' : ''}. Not included: the electrician,
-                scaffolding, and a new cylinder if you don't have one.
-                {g98Panels && ` Above ${G98_LIMIT_KW} kW of inverter output the network operator must approve the system before you connect it (G99); microinverters sized to ${G98_LIMIT_KW} kW avoid that, at the cost of a little clipping on the brightest days (not modelled).`}
+                scaffolding{cfg.tubesM2 > 0 ? ', and the plumber and G3 installer for the solar cylinder' : ", and a new cylinder if you don't have one"}.
+                {g98Panels && ` Above ${G98_LIMIT_KW} kW of inverter output the network operator must approve the system before you connect it (G99); microinverters sized to ${G98_LIMIT_KW} kW avoid that, at the cost of clipping on bright days, which grows with the array (not modelled).`}
               </p>
             </div>
           </div>

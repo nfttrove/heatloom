@@ -6,7 +6,7 @@ const kwh = (x: number) => Math.round(x).toLocaleString('en-GB');
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
 // How much a hot tank cools overnight, indoors at 18 °C: jacketed, and with a
-// bought cylinder's thinner factory foam (about 2.5× the heat loss).
+// typical cylinder's thinner factory foam (up to about 3.5× the heat loss).
 const TANK = storeRetention(DEFAULT_LOOM.tankKWh, 'water');
 const overnightDrop = (uFactor: number, fromC = 60, roomC = 18, hours = 12) => {
   const tauH = (TANK.timeConstantDays * 24) / uFactor;
@@ -85,9 +85,9 @@ export default function HowItWorks() {
             <Droplets className="w-10 h-10 text-red-600 mb-4" />
             <h3 className="text-xl font-bold text-gray-900 mb-3">2 · The spare heats your water</h3>
             <p className="text-gray-600 leading-relaxed">
-              The loom measures the power flowing out to the grid and turns the tank's immersion heater up by exactly that
-              much, so nothing is exported while the tank can take it — about {kwh(PLAN.pv.toTankKWh)} kWh a year that
-              would otherwise be given away.
+              A diverter — the loom, or a bought one meanwhile — measures the power flowing out to the grid and turns the
+              tank's immersion heater up by that much, so little is exported while the tank can take it: about{' '}
+              {kwh(PLAN.pv.toTankKWh)} kWh a year that would otherwise be given away.
             </p>
           </div>
           <div className="bg-white p-8 rounded-3xl shadow-lg border border-gray-200">
@@ -106,7 +106,7 @@ export default function HowItWorks() {
             <p className="text-gray-700 leading-relaxed">
               It stores energy as the thing you were going to buy anyway, and many homes already have one — any
               cylinder with an immersion heater will do. It holds its heat well: a {Math.round(TANK.massKg)}-litre tank at 60 °C loses only about{' '}
-              {overnightDrop(1).toFixed(0)}–{overnightDrop(2.5).toFixed(0)} °C overnight, depending on its insulation — so
+              {overnightDrop(1).toFixed(0)}–{overnightDrop(3.5).toFixed(0)} °C overnight, depending on its insulation — so
               an afternoon's sun is still there for the evening and the next morning. It sits indoors, and the panels hold
               no water, so there is nothing outside to freeze.
             </p>

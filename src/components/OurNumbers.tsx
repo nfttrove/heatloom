@@ -22,10 +22,10 @@ const yrs = (x: number) => `${x.toFixed(1)} years`;
 
 // What moves the payback, each computed from the default build.
 const VARIANTS = [
-  { label: 'You heat water with an immersion heater today', plan: loomPlan({ ...DEFAULT_LOOM, heatSource: 'electric' }) },
+  { label: 'You heat water with an immersion heater today (standard tariff)', plan: loomPlan({ ...DEFAULT_LOOM, heatSource: 'electric' }) },
   { label: 'You heat water with oil', plan: loomPlan({ ...DEFAULT_LOOM, heatSource: 'oil' }) },
   { label: 'Someone is home in the day (half the output used as it is made)', plan: loomPlan({ ...DEFAULT_LOOM, pvSelfUse: 0.5 }) },
-  { label: `A bought diverter instead of the loom (${formatGBP(BOUGHT_DIVERTER_GBP)} fitted)`, plan: loomPlan({ ...DEFAULT_LOOM, controller: 'bought' }) },
+  { label: `A bought diverter instead of the loom (about ${formatGBP(BOUGHT_DIVERTER_GBP)} fitted, against the loom's ${formatGBP(LOOM_CONTROLLER_PARTS_GBP)} of parts)`, plan: loomPlan({ ...DEFAULT_LOOM, controller: 'bought' }) },
   { label: 'Panels only, no loom', plan: loomPlan({ ...DEFAULT_LOOM, controller: 'none' }) },
 ];
 
@@ -54,7 +54,10 @@ export default function OurNumbers() {
               <li>• Exports earn nothing: a DIY install can't claim the Smart Export Guarantee</li>
               <li>• A poor year: 10% less sun</li>
             </ul>
-            <p className="text-gray-500 text-sm mt-4">Not included: the electrician, scaffolding, or a new cylinder.</p>
+            <p className="text-gray-500 text-sm mt-4">
+              Not included: the electrician, scaffolding, or a new cylinder. The house is assumed to use at least a fifth of a
+              day's electricity from the panels when they make that much, and never more than 60% (the rest is used after dark).
+            </p>
           </div>
 
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 md:p-8 rounded-3xl border border-green-200/60">
@@ -81,8 +84,7 @@ export default function OurNumbers() {
               <h3 className="text-2xl font-bold mb-3">Check our working</h3>
               <p className="text-gray-300 leading-relaxed mb-6">
                 The model is open source and covered by automated tests, and every figure on this page is computed from it.
-                Predictions for Heat Loom designs are filed in the public In Fini claim registry, so builders can compare what
-                they measure with what we said.
+                Earlier Heat Loom designs have predictions filed in the public In Fini claim registry.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <a href={REPO_MODEL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center space-x-2 px-6 py-3 bg-white text-gray-900 rounded-xl font-semibold hover:bg-gray-100">
