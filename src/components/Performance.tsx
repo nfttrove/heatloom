@@ -174,7 +174,7 @@ export default function Performance() {
                 <TrendingUp className="w-6 h-6" />
               </div>
               <h4 className="font-bold text-green-800 mb-4 text-lg">Discharge Test</h4>
-              <p className="text-gray-700 leading-relaxed">Fixed flow rate through use coil, log inlet/outlet temps</p>
+              <p className="text-gray-700 leading-relaxed">Fixed flow through the heat take-off exchanger, log inlet/outlet temperatures</p>
             </div>
             
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-8 rounded-2xl border border-purple-200/50 group hover:shadow-lg transition-all duration-300">

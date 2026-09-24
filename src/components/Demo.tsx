@@ -44,8 +44,9 @@ const fresh = (): SimState => ({
 
 /**
  * A number box that lets you type freely: the draft text is kept while
- * editing, the value updates only when the text parses inside [min, max],
- * and leaving the box shows the value actually in use.
+ * editing, the value updates while the text parses inside [min, max], and
+ * leaving the box clamps what was typed to the range and shows the value
+ * actually in use.
  */
 function NumberField(props: {
   id: string;
@@ -75,7 +76,12 @@ function NumberField(props: {
           const v = parseFloat(e.target.value);
           if (Number.isFinite(v) && v >= props.min && v <= props.max) props.onValue(v);
         }}
-        onBlur={() => setDraft(null)}
+        onBlur={() => {
+          // Out-of-range entries clamp to the nearest limit when you leave the box.
+          const v = parseFloat(draft ?? '');
+          if (Number.isFinite(v)) props.onValue(Math.min(props.max, Math.max(props.min, v)));
+          setDraft(null);
+        }}
         className={props.className}
       />
     </div>

@@ -428,3 +428,27 @@ describe("review round: pinned behaviour", () => {
     expect(((pilot.electricKWhPerDay / 24) * 1000).toFixed(3)).toBe("450.775");
   });
 });
+
+describe("recheck round: copy conditions follow the model", () => {
+  it("storeLimitedKWh is zero when a small store doesn't bind, positive when it does", () => {
+    const notBinding = hybridPlan({ ...DEFAULT_HYBRID, heatKWhPerDay: 10, collectorM2: 20, storeKWh: 20 });
+    expect(notBinding.thermal.storeDaysOfPeakCollection).toBeLessThan(1);
+    expect(notBinding.thermal.storeLimitedKWh).toBe(0);
+    expect(notBinding.thermal.usedKWh).toBe(hybridPlan({ ...DEFAULT_HYBRID, heatKWhPerDay: 10, collectorM2: 20, storeKWh: 300 }).thermal.usedKWh);
+    const binding = hybridPlan({ ...DEFAULT_HYBRID, heatKWhPerDay: 100, collectorM2: 40, storeKWh: 10 });
+    const ample = hybridPlan({ ...DEFAULT_HYBRID, heatKWhPerDay: 100, collectorM2: 40, storeKWh: 300 });
+    expect(binding.thermal.storeLimitedKWh).toBeCloseTo(ample.thermal.usedKWh - binding.thermal.usedKWh, 6);
+  });
+
+  it("the December verdict says when the store is what limits it, and only names what stays", () => {
+    const limited = hybridPlan({ electricKWhPerDay: 8, heatKWhPerDay: 20, pvKwp: 10, collectorM2: 40, storeKWh: 20, dniAnnual: 5, pvSelfUse: 1 });
+    const free = hybridPlan({ electricKWhPerDay: 8, heatKWhPerDay: 20, pvKwp: 10, collectorM2: 40, storeKWh: 300, dniAnnual: 5, pvSelfUse: 1 });
+    expect(limited.coverage.heatWinter).toBeLessThan(free.coverage.heatWinter);
+    expect(limited.decemberVerdict.text).toContain("store's size limits");
+    expect(free.decemberVerdict.text).not.toContain("store's size limits");
+    for (const v of [limited, free]) {
+      if (v.coverage.electricWinter >= 1) expect(v.decemberVerdict.text).not.toMatch(/the grid/i);
+      if (v.coverage.heatWinter < 1) expect(v.decemberVerdict.text).toMatch(/the boiler/i);
+    }
+  });
+});

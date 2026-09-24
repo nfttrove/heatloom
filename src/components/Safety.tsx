@@ -1,5 +1,5 @@
 import { Shield, AlertCircle, CheckCircle, Wrench, Eye, Bell, Cog, Flame, Sun, Gauge, Weight, Thermometer } from 'lucide-react';
-import { storeHeatLoss, DEFAULT_HYBRID, HYBRID_STORE_TOP_C, RIG_STORE_TOP_C } from '../utils/heatloom';
+import { storeHeatLoss, sandKgPerKWh, DEFAULT_HYBRID, HYBRID_STORE_TOP_C, RIG_STORE_TOP_C, SAND_KG_PER_KWH } from '../utils/heatloom';
 
 // The research rig's concentration (Theory) and a clear-sky direct beam.
 const CONCENTRATION = { low: 20, high: 40 };
@@ -30,7 +30,7 @@ const HAZARDS = [
   {
     icon: <Flame className="w-6 h-6" />,
     title: 'Fire: sand doesn\'t burn, the system can',
-    text: 'A 250–400 °C loop means thermal oil or similar. Oil that leaks into insulation can self-ignite well below its flash point (a "lagging fire"). Use non-combustible insulation, catch trays under joints, and an over-temperature cutoff that works independently of the controller.',
+    text: `The rig's loop runs on heat-transfer oil, and its ${RIG_STORE_TOP_C} °C top is hotter than common oils are rated for: mineral oils to roughly 300 °C, synthetic ones to 345–400 °C (the hottest only when pressurised), and at that temperature some are near or past autoignition — a leak can catch fire with nothing else involved. Run the loop no hotter than its fluid's rating: charging only to 300 °C still works, at about ${Math.round(sandKgPerKWh(280))} kg of sand per kWh instead of ${Math.round(SAND_KG_PER_KWH)}. Oil that soaks into insulation can self-ignite well below its flash point (a "lagging fire"). Use non-combustible insulation, catch trays under joints, and an over-temperature cutoff that works independently of the controller.`,
   },
   {
     icon: <Weight className="w-6 h-6" />,

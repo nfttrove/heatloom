@@ -458,6 +458,9 @@ interface Scenario {
   savingsGBP: number;
   decElectricCover: number;
   decHeatCover: number;
+  /** Heat the house wanted and the tubes collected, lost only to the store-size cap, kWh/yr. */
+  storeLimitedKWh: number;
+  decStoreLimited: boolean;
   months: MonthRow[];
 }
 
@@ -490,6 +493,8 @@ export interface HybridPlan {
     storeHalfLifeDays: number;
     /** Store capacity ÷ the best month's daily collection. */
     storeDaysOfPeakCollection: number;
+    /** Heat lost to the store-size cap alone, kWh/yr: > 0 means a bigger store would add coverage. */
+    storeLimitedKWh: number;
     /** A water tank doing the same job (95 → 45 °C), for comparison. */
     waterMassKg: number;
     storeCostGBP: number;
@@ -533,9 +538,9 @@ function pvAnnualKWh(p: HybridInput): number {
 function runScenario(p: HybridInput, sunScale: number, efficiency: number, selfUse: number, heatPrice: number): Scenario {
   const pvDailyMean = (pvAnnualKWh(p) * sunScale) / 365;
   const thermalDailyMean = p.dniAnnual * sunScale * p.collectorM2 * efficiency;
-  let pvUsed = 0, pvExport = 0, heatUsed = 0;
+  let pvUsed = 0, pvExport = 0, heatUsed = 0, storeLimited = 0;
   const months: MonthRow[] = [];
-  let decEl = 0, decHeat = 0;
+  let decEl = 0, decHeat = 0, decStoreLimited = false;
   for (let m = 0; m < 12; m++) {
     const d = DAYS_IN_MONTH[m];
     const pvDay = pvDailyMean * SOLAR_MONTHLY[m];
@@ -548,6 +553,8 @@ function runScenario(p: HybridInput, sunScale: number, efficiency: number, selfU
     // draws from it, so a day's heat is also capped at what the store
     // holds — conservative, since some heat is used while it is collected.
     const heatUsedDay = Math.min(heatDemandDay, heatDay, Math.max(0, p.storeKWh));
+    const limitedDay = Math.min(heatDemandDay, heatDay) - heatUsedDay;
+    storeLimited += d * limitedDay;
     pvUsed += d * pvUsedDay;
     pvExport += d * (pvDay - pvUsedDay);
     heatUsed += d * heatUsedDay;
@@ -555,10 +562,11 @@ function runScenario(p: HybridInput, sunScale: number, efficiency: number, selfU
     if (m === DECEMBER) {
       decEl = pvUsedDay / Math.max(p.electricKWhPerDay, 0.1);
       decHeat = heatUsedDay / Math.max(heatDemandDay, 0.1);
+      decStoreLimited = limitedDay > 1e-9;
     }
   }
   const savings = pvUsed * ELECTRICITY_GBP_PER_KWH + pvExport * EXPORT_GBP_PER_KWH + heatUsed * heatPrice;
-  return { pvUsedKWh: pvUsed, pvExportKWh: pvExport, heatUsedKWh: heatUsed, savingsGBP: savings, decElectricCover: decEl, decHeatCover: decHeat, months };
+  return { pvUsedKWh: pvUsed, pvExportKWh: pvExport, heatUsedKWh: heatUsed, savingsGBP: savings, decElectricCover: decEl, decHeatCover: decHeat, storeLimitedKWh: storeLimited, decStoreLimited, months };
 }
 
 export function hybridPlan(p: HybridInput): HybridPlan {
@@ -589,9 +597,16 @@ export function hybridPlan(p: HybridInput): HybridPlan {
   const heatWinter = central.decHeatCover;
   const serious = heatWinter < 0.5 || elWinter < 0.3;
   const pct = (x: number) => Math.round(100 * x);
+  const stays = [elWinter < 1 ? "the grid" : "", heatWinter < 1 ? "the boiler" : ""].filter(Boolean);
+  const staysText = stays.length
+    ? ` ${stays.join(" and ").replace(/^t/, "T")} ${stays.length > 1 ? "stay" : "stays"} part of an honest design — the hybrid buys down ${stays.length > 1 ? "their" : "its"} share, it does not retire ${stays.length > 1 ? "them" : "it"}.`
+    : "";
+  const source = central.decStoreLimited
+    ? "from the size of the array and collector — and here the store's size limits how much of each sunny day reaches the house. No store carries summer into winter."
+    : "from the size of the array and collector, not from the store, which cannot carry summer into winter.";
   const text = serious
-    ? `December reality check: electric coverage ${pct(elWinter)}%, heat coverage ${pct(heatWinter)}%. The grid and the boiler stay part of an honest design — the hybrid buys down their share, it does not retire them.`
-    : `December holds: ${pct(elWinter)}% electric and ${pct(heatWinter)}% heat coverage in the worst month — from the size of the array and collector, not from the store, which cannot carry summer into winter.`;
+    ? `December reality check: electric coverage ${pct(elWinter)}%, heat coverage ${pct(heatWinter)}%.${staysText}`
+    : `December holds: ${pct(elWinter)}% electric and ${pct(heatWinter)}% heat coverage — ${source}${staysText}`;
 
   return {
     pv: {
@@ -615,6 +630,7 @@ export function hybridPlan(p: HybridInput): HybridPlan {
       storeVolumeM3: loss.volumeM3,
       storeHalfLifeDays: usefulHeatHalfLifeDays(loss.timeConstantDays),
       storeDaysOfPeakCollection: peakThermal > 0 ? p.storeKWh / peakThermal : Infinity,
+      storeLimitedKWh: central.storeLimitedKWh,
       waterMassKg: p.storeKWh * HYBRID_WATER_KG_PER_KWH,
       storeCostGBP: storeCost,
       mediaCostGBP: sandMassKg * SAND_MEDIA_GBP_PER_KG,

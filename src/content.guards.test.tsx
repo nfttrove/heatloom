@@ -29,9 +29,14 @@ const section = (id: string) => {
 };
 // Everything that ships, including text that only renders after a click and
 // attribute values (titles, aria-labels) that the first render strips.
-const SOURCE = Object.values(
-  import.meta.glob(["./components/*.tsx", "./App.tsx", "./utils/heatloom.ts"], { query: "?raw", import: "default", eager: true })
-).join("\n") as string;
+// JSX wraps prose across lines and splits it with {' '}, so collapse both.
+const SOURCE = (
+  Object.values(
+    import.meta.glob(["./components/*.tsx", "./App.tsx", "./utils/heatloom.ts"], { query: "?raw", import: "default", eager: true })
+  ).join("\n") as string
+)
+  .replace(/\{\s*['"`]\s*['"`]\s*\}/g, " ")
+  .replace(/\s+/g, " ");
 
 describe("claims the evidence does not support stay off the page", () => {
   // Each of these was on the live site before the 2026-09 honesty sweep.
@@ -82,7 +87,7 @@ describe("the page says what it must", () => {
   it("has a safety section covering each major hazard", () => {
     expect(HTML).toContain('id="safety"');
     const safety = section("safety");
-    for (const h of ["Concentrated sunlight", "Steam and pressure", "critical point", "Stagnation", "drainback", "Fire:", "Weight and hot surfaces", "Fail-safe defocus without power"]) {
+    for (const h of ["Concentrated sunlight", "Steam and pressure", "critical point", "Stagnation", "drainback", "Fire:", "autoignition", "Weight and hot surfaces", "Fail-safe defocus without power"]) {
       expect(safety).toContain(h);
     }
   });

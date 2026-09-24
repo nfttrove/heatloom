@@ -9,6 +9,7 @@ import {
   ELECTRICITY_GBP_PER_KWH,
   GAS_GBP_PER_KWH,
   BOILER_EFFICIENCY,
+  HEATING_OIL_GBP_PER_LITRE,
   STORE_GBP_PER_KWH,
   PV_PANEL_GBP_PER_W,
   DEFAULT_HYBRID,
@@ -85,6 +86,18 @@ export default function Hybrid() {
     plan: hybridPlan({ ...cfg, electricKWhPerDay: DEFAULT_HYBRID.electricKWhPerDay, heatKWhPerDay: DEFAULT_HYBRID.heatKWhPerDay, pvKwp: t.pvKwp, collectorM2: t.collectorM2, storeKWh: t.storeKWh }),
   }));
   const starter = tiers[0].plan.economics;
+  const tiersKeepBoiler = tiers.every((t) => t.plan.coverage.heatWinter < 1);
+  const tiersKeepGrid = tiers.every((t) => t.plan.coverage.electricWinter < 1);
+  const honestyColumn = [
+    tiersKeepBoiler ? 'at these settings no tier retires your boiler' : 'at these settings a tier can cover December heat',
+    tiersKeepGrid ? 'all three keep the grid' : 'a tier can cover December electricity',
+  ].join(', and ');
+  const heatPriceNote =
+    cfg.heatSource === 'oil'
+      ? `kerosene at ${(HEATING_OIL_GBP_PER_LITRE * 100).toFixed(1)}p a litre (September 2026 average, 1,000-litre orders) through a ${Math.round(BOILER_EFFICIENCY * 100)}% boiler`
+      : cfg.heatSource === 'heatPump' || cfg.heatSource === 'electric'
+        ? `the same capped electricity price${cfg.heatSource === 'heatPump' ? ', divided by a COP of 3' : ''}`
+        : `Ofgem's capped gas price, ${(GAS_GBP_PER_KWH * 100).toFixed(1)}p, through a ${Math.round(BOILER_EFFICIENCY * 100)}% boiler`;
 
   return (
     <section id="hybrid" className="py-24 bg-gradient-to-br from-slate-50 to-orange-50/20">
@@ -122,7 +135,7 @@ export default function Hybrid() {
               </select>
             </div>
             <Slider label="Sunshine (yearly mean)" value={cfg.dniAnnual} min={1} max={8} step={0.5} unit="kWh/m²/day" onChange={(v) => set({ dniAnnual: v })} />
-            <p className="text-gray-500 text-xs -mt-3">Global sunlight on a south-facing tilt, for the panels and the tubes (tubes use diffuse light too). Southern England ≈ 3.</p>
+            <p className="text-gray-500 text-xs -mt-3">Global sunlight on a south-facing tilt, for the panels and the tubes (tubes use diffuse light too). Southern England ≈ 3. PV is scaled from southern England's yield; hot, sunny sites lose more to panel heating, so read high settings as optimistic.</p>
             <div className="pt-4 border-t border-gray-100 space-y-6">
               <div className="flex items-center space-x-3">
                 <Sun className="w-5 h-5 text-blue-600" />
@@ -141,9 +154,11 @@ export default function Hybrid() {
               Either way it holds days, not seasons: full, it loses half its useful heat in about{' '}
               {plan.thermal.storeHalfLifeDays.toFixed(0)} days behind 150 mm of mineral wool. It holds{' '}
               {plan.thermal.storeDaysOfPeakCollection.toFixed(1)} days of your best month's collection
-              {plan.thermal.storeDaysOfPeakCollection < 1
-                ? ' — less than a sunny day, so it caps how much heat reaches the house; a bigger store would add coverage.'
-                : '; past one or two, a bigger store adds cost, not coverage.'}
+              {plan.thermal.storeLimitedKWh >= 1
+                ? ` — less than a sunny day, so it caps how much heat reaches the house: a bigger store would add up to about ${Math.round(plan.thermal.storeLimitedKWh).toLocaleString('en-GB')} kWh a year. (The model sends every kWh through the store, which is pessimistic for small stores: some heat is used as it is collected.)`
+                : plan.thermal.storeDaysOfPeakCollection < 1
+                  ? ' — less than a sunny day, but at this demand the house takes the heat as fast as it comes, so a bigger store adds cost, not coverage.'
+                  : '; past one or two, a bigger store adds cost, not coverage.'}
             </p>
           </div>
 
@@ -162,7 +177,7 @@ export default function Hybrid() {
                 color="text-red-600"
                 note={
                   heatSurplus >= 1
-                    ? `Of ${Math.round(plan.thermal.annualKWh).toLocaleString('en-GB')} kWh collected, ${Math.round(plan.thermal.usedKWh).toLocaleString('en-GB')} meet demand; the rest is surplus in ${monthSpan(surplusMonths)}, when the tubes collect more than the house${plan.thermal.storeDaysOfPeakCollection < 1 ? ' can take through the store' : ' needs'}.`
+                    ? `Of ${Math.round(plan.thermal.annualKWh).toLocaleString('en-GB')} kWh collected, ${Math.round(plan.thermal.usedKWh).toLocaleString('en-GB')} meet demand; the rest is surplus in ${monthSpan(surplusMonths)}, when the tubes collect more than the house ${plan.thermal.storeLimitedKWh >= 1 ? 'needs or the store can pass on' : 'needs'}.`
                     : `All ${Math.round(plan.thermal.annualKWh).toLocaleString('en-GB')} kWh collected meets demand, even in summer — the collector is small next to the house's heat needs.`
                 }
               />
@@ -227,7 +242,7 @@ export default function Hybrid() {
                 </table>
               </div>
               <p className="text-gray-600 text-xs mt-4 leading-relaxed">
-                The December column is the honesty column: no UK tier retires your boiler, and all three keep the grid.
+                The December column is the honesty column: {honestyColumn}.
                 Against {heatPhrase}, the starter's heat half ({formatGBP(starter.thermalCostGBP)}) earns{' '}
                 {formatGBP(starter.heatSavingsGBP)} a year and its PV half ({formatGBP(starter.pvCostGBP)}) earns{' '}
                 {formatGBP(starter.electricSavingsGBP)}: the heat half pays for itself in{' '}
@@ -257,9 +272,8 @@ export default function Hybrid() {
               <p className="text-gray-600 text-sm mt-5 leading-relaxed">
                 Savings count only PV used at home ({Math.round(plan.pv.selfUse * 100)}%, exports at £0) and heat that meets
                 each month's demand, with a monthly UK sun and heating shape; the store never carries summer into winter.
-                Heat is valued at what {heatPhrase} costs, at Ofgem's October–December 2026 cap prices (electricity{' '}
-                {(ELECTRICITY_GBP_PER_KWH * 100).toFixed(1)}p, gas {(GAS_GBP_PER_KWH * 100).toFixed(1)}p through a{' '}
-                {Math.round(BOILER_EFFICIENCY * 100)}% boiler). The store's {formatGBP(STORE_GBP_PER_KWH)}/kWh is a floor,
+                PV is valued at Ofgem's October–December 2026 capped electricity price,{' '}
+                {(ELECTRICITY_GBP_PER_KWH * 100).toFixed(1)}p; heat at what {heatPhrase} costs — {heatPriceNote}. The store's {formatGBP(STORE_GBP_PER_KWH)}/kWh is a floor,
                 and the pessimistic case varies sunshine and efficiency, not cost. Lithium would cost {formatGBP(cfg.storeKWh * LITHIUM_GBP_PER_KWH)} for
                 the same number of kWh — but electrical kWh, each worth several kWh of heat. The registered claim (On Trial)
                 is annual production, not these savings.
