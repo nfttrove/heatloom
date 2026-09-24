@@ -21,7 +21,12 @@ const HAZARDS = [
   {
     icon: <Gauge className="w-6 h-6" />,
     title: 'Steam and pressure',
-    text: `Water boils wherever it meets a surface above 100 °C once the flow stops. Trapped in the rig's store it would reach about ${STEAM_BAR_AT_250C.toFixed(0)} bar at 250 °C and ${STEAM_BAR_AT_350C.toFixed(0)} bar at 350 °C, and the store runs to ${RIG_STORE_TOP_C} °C — past water's ${WATER_CRITICAL_C} °C critical point, beyond anything a DIY coil can hold. Keep water out of the rig's store entirely: take heat out through the oil loop and an external exchanger with its own temperature limit. The Hybrid's water store stays below 100 °C (it charges to ${HYBRID_STORE_TOP_C} °C) but is still a pressure hazard: an unvented cylinder must have its temperature-and-pressure relief valve and be fitted by a G3-qualified installer; a vented store needs its open vent kept clear. Fit a thermostatic mixing valve rated for the hottest water the store delivers — water at 60 °C and above scalds in seconds.`,
+    text: `Water boils wherever it meets a surface above 100 °C once the flow stops. Trapped in the rig's store it would reach about ${STEAM_BAR_AT_250C.toFixed(0)} bar at 250 °C and ${STEAM_BAR_AT_350C.toFixed(0)} bar at 350 °C, and the store runs to ${RIG_STORE_TOP_C} °C — past water's ${WATER_CRITICAL_C} °C critical point, beyond anything a DIY coil can hold. Keep water out of the rig's store entirely: take heat out through the oil loop and an external exchanger with its own temperature limit. The Hybrid's water store stays below 100 °C (it charges to ${HYBRID_STORE_TOP_C} °C) but is still a pressure hazard. An unvented cylinder needs both of its safety devices — a non-self-resetting energy cut-out and a temperature-and-pressure relief valve discharging through a tundish — and must be fitted by a G3-qualified installer. The sun can't be switched off, so the cut-out must stop the solar pump before the relief valve ever opens. A vented store needs its open vent kept clear. Fit a thermostatic mixing valve rated for the hottest water the store delivers — water at 60 °C and above scalds in seconds.`,
+  },
+  {
+    icon: <Shield className="w-6 h-6" />,
+    title: 'Water hygiene (legionella)',
+    text: 'Legionella bacteria grow in stored water between about 20 and 45 °C — exactly where a solar-heated tank sits for much of the winter. Keep the top of the cylinder at 60 °C or above (the boiler or immersion tops it up) and heat the whole cylinder to 60 °C regularly; solar alone will not do it between October and March.',
   },
   {
     icon: <Thermometer className="w-6 h-6" />,
@@ -60,7 +65,7 @@ const SAFETY_FEATURES = [
     icon: <CheckCircle className="w-7 h-7" />,
     box: 'bg-gradient-to-br from-green-400 to-green-600',
     dot: 'bg-green-500',
-    items: ['Ground-level slab for the store\'s weight', 'Waterproof tank shell with a drainage layer', 'Non-combustible insulation; service hatch'],
+    items: ['A floor that carries the store — a ground-level slab for big tanks and the rig\'s sand', 'Relief-valve discharge through a tundish to a safe, visible place', 'Non-combustible insulation; service access'],
   },
 ];
 

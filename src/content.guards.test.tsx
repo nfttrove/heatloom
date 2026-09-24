@@ -94,7 +94,7 @@ describe("the page says what it must", () => {
   it("has a safety section covering each major hazard", () => {
     expect(HTML).toContain('id="safety"');
     const safety = section("safety");
-    for (const h of ["Concentrated sunlight", "Steam and pressure", "critical point", "Stagnation", "drainback", "Fire:", "autoignition", "Weight and hot surfaces", "Fail-safe defocus without power"]) {
+    for (const h of ["Concentrated sunlight", "Steam and pressure", "critical point", "Stagnation", "drainback", "Fire:", "autoignition", "legionella", "energy cut-out", "tundish", "Weight and hot surfaces", "Fail-safe defocus without power"]) {
       expect(safety).toContain(h);
     }
   });

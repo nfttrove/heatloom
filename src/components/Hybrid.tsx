@@ -16,6 +16,8 @@ import {
   HYBRID_STORE_TOP_C,
   HYBRID_STORE_USEFUL_MIN_C,
   SAND_COMPARISON_TOP_C,
+  HYBRID_SAND_KG_PER_KWH,
+  HYBRID_WATER_KG_PER_KWH,
   LITHIUM_GBP_PER_KWH,
   THERMAL_BOP_GBP,
   HOUSE_TIERS,
@@ -156,7 +158,8 @@ export default function Hybrid() {
               loses two to three times more — add a jacket). The same job in sand, charged to {SAND_COMPARISON_TOP_C} °C, would be{' '}
               {Math.round(plan.thermal.sandComparison.massKg).toLocaleString('en-GB')} kg, lose{' '}
               {Math.round(plan.thermal.sandComparison.lossWhenFullW)} W and half its useful heat in about{' '}
-              {plan.thermal.sandComparison.usefulHalfLifeDays.toFixed(0)} days: water stores about five times the heat per kg, so
+              {plan.thermal.sandComparison.usefulHalfLifeDays.toFixed(0)} days: over these swings water holds about{' '}
+              {(HYBRID_SAND_KG_PER_KWH / HYBRID_WATER_KG_PER_KWH).toFixed(1)} times the heat per kg, so
               its tank is smaller, with less surface to leak through, and it runs cooler. Either holds days, not seasons. It holds{' '}
               {plan.thermal.storeDaysOfPeakCollection.toFixed(1)} days of your best month's collection
               {plan.thermal.storeLimitedKWh >= 1

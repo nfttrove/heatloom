@@ -138,7 +138,7 @@ export default function Theory() {
             <p className="text-gray-600 leading-relaxed mb-6 text-lg">
               The research rig's store is a layered granular core: dense basalt around the charge coil, quartz sand as the
               bulk, perlite to insulate — sand because it takes 250 °C and more without a pressure vessel. The Hybrid's
-              store runs below 100 °C, where water wins: the default {DEFAULT_HYBRID.storeKWh} kWh tank, full, loses half its
+              store runs below 100 °C, where water wins with the same insulation: the default {DEFAULT_HYBRID.storeKWh} kWh tank, full and jacketed, loses half its
               useful heat in about {DEFAULT_STORE.usefulHalfLifeDays.toFixed(0)} days, against about{' '}
               {SAND_STORE.usefulHalfLifeDays.toFixed(0)} days for sand doing the same job. Either holds days, not seasons.
             </p>

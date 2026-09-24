@@ -30,7 +30,8 @@ assumptions stated as constants, tested in `heatloom.test.ts`):
   U for the rig's hot store, since mineral wool conducts about twice as well
   at 250–420 °C). With the same insulation, water keeps the Hybrid's useful
   heat about **twice as long as sand** (a full 12 kWh tank: ~7 days to lose
-  half, against ~3 for sand): five times the heat per kg means a smaller
+  half, against ~3 for sand): about 2.8 times the heat per kg over these
+  swings means a smaller
   vessel with less surface, run cooler. Either holds **days, not seasons**, so
   no month uses more heat than it collects, and a day's heat is capped at
   what the store holds.

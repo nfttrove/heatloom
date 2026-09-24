@@ -253,7 +253,7 @@ export default function EnergyFlow() {
               <h4 className="font-bold text-xl mb-3 text-orange-400">What this toy leaves out</h4>
               <p className="text-gray-300 leading-relaxed">
                 Real skies change by the minute and by the month; the Hybrid's headline numbers come from its monthly model,
-                not from this panel. The store here loses heat with the same time constant as that model — a full store loses half its
+                not from this panel. The store here loses heat with the same time constant as that model — a full, jacketed store loses half its
                 useful heat in about {Math.round(HALF_LIFE_DAYS)} days — which is why it smooths days, not seasons. The retired research rig
                 added an ORC turbine after the store, turning about {Math.round(ORC_EFFICIENCY * 100)}% of its heat into
                 electricity:{' '}

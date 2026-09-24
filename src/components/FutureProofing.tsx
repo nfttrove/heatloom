@@ -36,7 +36,7 @@ const NEXT = [
   {
     title: 'Measure the water store',
     description:
-      `Decided on paper: at the Hybrid’s ${HYBRID_STORE_USEFUL_MIN_C}–${HYBRID_STORE_TOP_C} °C, water stores the same heat in about ${WATER_SHARE_PCT}% of sand’s weight and, with the same insulation, keeps it about ${HOLDS_LONGER.toFixed(1)}× as long — so the Hybrid now uses water. What a real cylinder does is still to be measured.`,
+      `Decided on paper: at the Hybrid’s ${HYBRID_STORE_USEFUL_MIN_C}–${HYBRID_STORE_TOP_C} °C, water stores the same heat in about ${WATER_SHARE_PCT}% of the weight of sand charged to 120 °C and, with the same insulation, keeps it about ${HOLDS_LONGER.toFixed(1)}× as long — so the Hybrid now uses water. What a real cylinder does is still to be measured.`,
     icon: <FlaskConical className="w-7 h-7" />,
     box: 'bg-gradient-to-br from-purple-400 to-purple-600',
     dot: 'bg-purple-500',

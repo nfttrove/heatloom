@@ -119,8 +119,8 @@ export const SAND_KG_PER_KWH = sandKgPerKWh(RIG_STORE_DELTA_T_K); // 11.25
 
 /**
  * Hybrid: a water store. A twin-coil solar cylinder (or a buffer store when
- * it also feeds the heating) is charged to about 85 °C, where solar
- * controllers stop the pump, below the cylinder's 90–95 °C
+ * it also feeds the heating) is charged to about 85 °C — the solar
+ * controller's maximum set there (many ship at 60 °C) — below the cylinder's 90–95 °C
  * temperature-and-pressure relief; its heat is useful down to about 45 °C.
  */
 export const HYBRID_STORE_TOP_C = 85;
@@ -212,7 +212,8 @@ export interface StoreRetention {
 /**
  * A Hybrid store holding `storeKWh` of useful heat in `medium`. Both media
  * get the same 150 mm-equivalent insulation, so the comparison is like for
- * like. Water wins at these temperatures: about five times the heat per kg,
+ * like. Water wins at these temperatures: about 2.8 times the heat per kg over
+ * these swings (5 times per kelvin),
  * so a smaller vessel with less surface, run cooler. (A bought cylinder's
  * factory foam loses roughly two to three times more than this unless it is
  * jacketed.)
@@ -458,7 +459,10 @@ export const THERMAL_BOP_GBP = 500;
  * 250 L twin-coil solar cylinders cost £813–901 including VAT (Trading
  * Depot, SNH Trade Centre, Discount Heating) and hold about 11.6 kWh at this
  * swing, so £70–78/kWh; a 500 L buffer tank is £1,290 (Mad About Heat),
- * about £56/kWh before a coil. 75 keeps the small-cylinder figure. An
+ * about £56/kWh before a coil. 75 keeps the small-cylinder figure. If the
+ * boiler holds the top of a twin-coil cylinder at 60 °C (as it should, for
+ * hygiene), roughly three-quarters is solar store: nearer £97/kWh, with
+ * coverage unaffected at these sizes. An
  * unvented cylinder must be fitted by a G3-qualified installer (Building
  * Regulations Part G); that labour is not priced here.
  */

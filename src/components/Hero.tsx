@@ -70,7 +70,7 @@ export default function Hero() {
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Heat, Stored for Days</h3>
             <p className="text-gray-600 leading-relaxed text-lg">
               The default store is a {kwh(PLAN.thermal.storeMassKg)}-litre solar cylinder holding {DEFAULT_HYBRID.storeKWh} kWh of heat — about{' '}
-              {DEC_HEAT_DAYS.toFixed(1)} days of December heating. Full, it loses half its useful heat in ~{PLAN.thermal.storeHalfLifeDays.toFixed(0)} days;
+              {DEC_HEAT_DAYS.toFixed(1)} days of December heating. Full and jacketed, it loses half its useful heat in ~{PLAN.thermal.storeHalfLifeDays.toFixed(0)} days;
               the same job in sand would weigh {(SAND.massKg / PLAN.thermal.storeMassKg).toFixed(1)}× as much and lose it in ~{SAND.usefulHalfLifeDays.toFixed(0)} days.
               Water storage costs about {formatGBP(STORE_GBP_PER_KWH)} per kWh of heat against ~{formatGBP(LITHIUM_GBP_PER_KWH)} per kWh for lithium — though a
               kWh of heat is worth far less than a kWh of electricity.
@@ -114,7 +114,7 @@ export default function Hero() {
                   <div className="w-4 h-4 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full mt-1.5 flex-shrink-0"></div>
                   <div>
                     <h4 className="text-white font-bold text-lg mb-2">Storage, Sized Honestly</h4>
-                    <p className="text-gray-300 leading-relaxed">Collectors and cylinders are commodity. At the Hybrid's temperatures water beats sand: about {WATER_SHARE_PCT}% of the weight, and with the same insulation it keeps its useful heat {HOLDS_LONGER.toFixed(1)}× as long. At house scale either holds days, not seasons. Sand earns its place above 100 °C, where water needs a pressure vessel — the retired rig's territory.</p>
+                    <p className="text-gray-300 leading-relaxed">Collectors and cylinders are commodity. Water beats sand even with the sand charged hotter (to 120 °C): about {WATER_SHARE_PCT}% of the weight, and with the same insulation it keeps its useful heat {HOLDS_LONGER.toFixed(1)}× as long. At house scale either holds days, not seasons. Sand earns its place above 100 °C, where water needs a pressure vessel — the retired rig's territory.</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
