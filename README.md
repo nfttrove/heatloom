@@ -74,8 +74,19 @@ npm run lint       # eslint
 npm run build      # production build
 ```
 
-CI (GitHub Actions) runs typecheck, lint, tests, and a production build
+CI (GitHub Actions) runs typecheck, lint, tests (the engineering module, a
+render guard over the whole page, and the build ID), and a production build
 whose bundle is grepped for the shipped UI on every push to `main`.
+
+The live site is published from Bolt, so merging here does not deploy it. To
+catch a live site that has fallen behind, every build stamps
+`<meta name="heatloom-build" content="…">` with a hash of the shipped source
+(`scripts/build-id.mjs`, ported from in-fini: paths and contents of `src/`,
+`public/` and the build config; tests excluded, line endings normalised,
+dependency versions deliberately not included). The scheduled `live-drift`
+workflow compares heatloom.com's stamp with `main` daily and fails, which
+emails the repo owner, when they differ. Run it on demand from the Actions
+tab after publishing.
 
 ## License
 

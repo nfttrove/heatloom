@@ -24,3 +24,8 @@ jobs:
           for m in "Heat Loom Configurator" "Dark December" "Loss Budget" "The Hybrid" "deleted our own turbine" "numbers are on trial"; do
             grep -q "$m" "$BUNDLE" || { echo "MISSING FROM BUNDLE: $m"; exit 1; }
           done
+      - name: build stamp matches the source (live-drift depends on it)
+        run: |
+          expected=$(node scripts/build-id.mjs)
+          grep -q "name=\"heatloom-build\" content=\"$expected\"" dist/index.html \
+            || { echo "dist/index.html is not stamped with $expected"; grep -o 'name="heatloom-build"[^>]*' dist/index.html || true; exit 1; }
