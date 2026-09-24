@@ -4,8 +4,8 @@
 a concentrating solar-thermal rig (mirror troughs, a hot sand store, a small
 ORC turbine); that design is retired as a house system, and the site now
 leads with the **Hybrid**: bought PV for electricity, commodity
-evacuated-tube collectors and a sand store for heat. Nothing has been built
-and measured yet.
+evacuated-tube collectors and a water store (a solar cylinder) for heat.
+Nothing has been built and measured yet.
 
 What makes this repo slightly unusual for a product site: the engineering
 numbers are **extracted, tested code**, not marketing copy. Prose figures
@@ -22,14 +22,18 @@ assumptions stated as constants, tested in `heatloom.test.ts`):
   Hybrid's evacuated tubes have no mirror stage: optics 0.70 × heat loss
   0.75 × soiling 0.96 × storage 0.90 × pipework 0.85 ≈ **0.39** of global
   sunlight on the tilt.
-- **Sand by temperature swing** — kg per kWh = 3600 / (0.8 × ΔT): 11 kg/kWh
-  for the rig's 400 K swing, 60 kg/kWh for the Hybrid's 120 → 45 °C. At
-  those temperatures a water tank needs about 17 kg/kWh.
+- **Store mass by temperature swing** — kg per kWh = 3600 / (c<sub>p</sub> × ΔT).
+  The rig's sand, 400 K swing: 11 kg/kWh. The Hybrid's water, 85 → 45 °C:
+  21.5 kg/kWh; sand doing the same job (given the tubes' full 120 °C) would
+  need 60.
 - **Standing loss** — τ = C / UA for an insulated cylinder (and twice the
   U for the rig's hot store, since mineral wool conducts about twice as well
-  at 250–420 °C). A full 40 kWh Hybrid store loses half its *useful* heat in
-  about 5 days. It holds **days, not seasons**, so no month uses more heat
-  than it collects, and a day's heat is capped at what the store holds.
+  at 250–420 °C). With the same insulation, water keeps the Hybrid's useful
+  heat about **twice as long as sand** (a full 12 kWh tank: ~7 days to lose
+  half, against ~3 for sand): five times the heat per kg means a smaller
+  vessel with less surface, run cooler. Either holds **days, not seasons**, so
+  no month uses more heat than it collects, and a day's heat is capped at
+  what the store holds.
 - **Monthly shapes** — sunshine (December ≈ 0.3×, midsummer ≈ 1.6×) and
   heat demand (hot water plus heating degree days) replace a single winter
   factor.
@@ -40,8 +44,10 @@ assumptions stated as constants, tested in `heatloom.test.ts`):
   sourced: Ofgem's October–December 2026 cap for electricity and gas, a
   September 2026 kerosene average for oil.
 - **Pessimistic case** — −10% sun and the low end of each efficiency band,
-  shown beside every central estimate. Costs are not varied: the store's
-  £15/kWh is a floor.
+  shown beside every central estimate. Costs are not varied. The water
+  store is priced from 250 L twin-coil solar cylinders (£75/kWh of useful
+  heat; an unvented one needs a G3-qualified installer, not priced), and each
+  store is sized to about two days of its collector's best month.
 - **Rig costs from its own bill of materials** — the retired rig is priced
   from the Build Guide's parts list, not a guessed £/m².
 - **Toy balances** for the animated panels (Energy Flow, Demo) share the

@@ -77,7 +77,7 @@ export default function SystemLayout() {
                 <h3 className="text-xl font-bold mb-2">The Hybrid instead</h3>
                 <p className="text-white/90 leading-relaxed">
                   Bought PV panels and microinverters for electricity; commodity evacuated-tube collectors on a pumped glycol
-                  loop for heat. No mirrors, no tracker, no turbine.
+                  loop, charging a water cylinder, for heat. No mirrors, no tracker, no turbine.
                 </p>
               </div>
             </div>

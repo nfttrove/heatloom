@@ -30,6 +30,10 @@ import {
   hybridProductionKWhPerYear,
   formatGBP,
   usefulHeatHalfLifeDays,
+  storeRetention,
+  WATER_STORE_GBP_PER_KWH,
+  SAND_STORE_GBP_PER_KWH,
+  HOUSE_TIERS,
   ELECTRICITY_GBP_PER_KWH,
   HEAT_SOURCES,
   GAS_GBP_PER_KWH,
@@ -74,9 +78,12 @@ describe("stated assumptions are internally consistent", () => {
   it("sand per kWh follows from specific heat and the store's temperature swing", () => {
     expect(SAND_KG_PER_KWH).toBe(11.25); // 3600 / (0.8 × 400 K): the rig's generous swing
     expect(sandKgPerKWh(230)).toBeCloseTo(19.6, 1); // charged only to the Build Guide's 250 °C
-    expect(HYBRID_SAND_KG_PER_KWH).toBeCloseTo(60, 6); // 120 → 45 °C
-    // At the Hybrid's temperatures, water holds several times more per kg.
-    expect(HYBRID_SAND_KG_PER_KWH / HYBRID_WATER_KG_PER_KWH).toBeGreaterThan(3);
+    expect(HYBRID_SAND_KG_PER_KWH).toBeCloseTo(60, 6); // sand for comparison, 120 → 45 °C
+    // The Hybrid's water store, 85 → 45 °C: 3600 / (4.18 × 40) ≈ 21.5 kg/kWh,
+    // under half the sand even though sand gets the wider swing.
+    expect(HYBRID_WATER_KG_PER_KWH).toBeCloseTo(3600 / (4.18 * 40), 12);
+    expect(HYBRID_WATER_KG_PER_KWH).toBeCloseTo(21.53, 2);
+    expect(HYBRID_SAND_KG_PER_KWH / HYBRID_WATER_KG_PER_KWH).toBeGreaterThan(2.5);
   });
 
   it("monthly shapes average to one over the year", () => {
@@ -89,8 +96,8 @@ describe("stated assumptions are internally consistent", () => {
 });
 
 describe("the store holds days, not seasons", () => {
-  it("a 40 kWh Hybrid store: cylinder geometry, time constant and half-lives, pinned", () => {
-    const l = storeHeatLoss(40);
+  it("a 40 kWh sand store (the comparison): cylinder geometry, time constant and half-lives, pinned", () => {
+    const l = storeHeatLoss(40, 75);
     expect(l.massKg).toBeCloseTo(2400, 6);
     expect(l.volumeM3).toBeCloseTo(1.5, 12);
     // h = d: V = 2πr³, area = 2πr² (ends) + 2πr·2r (side) = 6πr²
@@ -102,16 +109,43 @@ describe("the store holds days, not seasons", () => {
     expect(l.timeConstantDays).toBeCloseTo(12.25, 2);
     expect(l.halfLifeDays).toBeCloseTo(l.timeConstantDays * Math.LN2, 12);
     // Useful heat (above 45 °C, from 120 °C, 10 °C around it) halves sooner.
-    const useful = usefulHeatHalfLifeDays(l.timeConstantDays);
+    const useful = usefulHeatHalfLifeDays(l.timeConstantDays, 120);
     expect(useful).toBeCloseTo(-l.timeConstantDays * Math.log((37.5 + 35) / 110), 12);
     expect(useful).toBeCloseTo(5.11, 2);
-    expect(hybridPlan(DEFAULT_HYBRID).thermal.storeHalfLifeDays).toBe(useful);
+    const sand = storeRetention(40, "sand");
+    expect(sand.massKg).toBeCloseTo(l.massKg, 9);
+    expect(sand.timeConstantDays).toBeCloseTo(l.timeConstantDays, 9);
+    expect(sand.usefulHalfLifeDays).toBeCloseTo(useful, 9);
     // After three months, essentially nothing is left.
     expect(Math.exp(-90 / l.timeConstantDays)).toBeLessThan(0.01);
   });
 
+  it("the default water store: geometry, time constant, useful half-life and loss, pinned", () => {
+    const w = storeRetention(12, "water");
+    expect(w.massKg).toBeCloseTo((12 * 3600) / (4.18 * 40), 9); // ≈ 258 litres
+    const r = Math.cbrt(w.massKg / 1000 / (2 * Math.PI));
+    expect(w.areaM2).toBeCloseTo(6 * Math.PI * r * r, 12);
+    expect(w.timeConstantDays).toBeCloseTo((w.massKg * 4180) / (0.25 * w.areaM2) / 86400, 9);
+    expect(w.timeConstantDays).toBeCloseTo(22.27, 2);
+    // From 85 °C, useful down to 45 °C, 10 °C around it.
+    expect(w.usefulHalfLifeDays).toBeCloseTo(-w.timeConstantDays * Math.log((20 + 35) / 75), 9);
+    expect(w.usefulHalfLifeDays).toBeCloseTo(6.91, 2);
+    expect(w.lossWhenFullW).toBeCloseTo(0.25 * w.areaM2 * 75, 9);
+    expect(hybridPlan(DEFAULT_HYBRID).thermal.storeHalfLifeDays).toBe(w.usefulHalfLifeDays);
+  });
+
+  it("water keeps the Hybrid's heat about twice as long as sand, with the same insulation", () => {
+    for (const kWh of [12, 40, 75]) {
+      const w = storeRetention(kWh, "water");
+      const s = storeRetention(kWh, "sand");
+      expect(w.usefulHalfLifeDays / s.usefulHalfLifeDays).toBeGreaterThan(1.9);
+      expect(w.lossWhenFullW).toBeLessThan(s.lossWhenFullW / 2);
+      expect(w.massKg).toBeLessThan(s.massKg / 2.5);
+    }
+  });
+
   it("the useful half-life is what the flow toy's store actually does", () => {
-    const tauH = storeHeatLoss(40).timeConstantDays * 24;
+    const tauH = storeRetention(40, "water").timeConstantDays * 24;
     let s = { ...HEAT_FLOW_START, storedKWh: 40 };
     const dt = 0.01;
     while (s.storedKWh > 20) s = heatFlowStep(s, { sunKWPerM2: 0, areaM2: 3, demandKW: 0, capacityKWh: 40 }, dt);
@@ -122,7 +156,8 @@ describe("the store holds days, not seasons", () => {
     // Capacity cost ÷ the value of one charge of heat: at one cycle a year
     // (seasonal) the store would take over a century to repay.
     expect(STORE_GBP_PER_KWH / HEAT_GBP_PER_KWH).toBeGreaterThan(100);
-    expect(LITHIUM_GBP_PER_KWH / STORE_GBP_PER_KWH).toBeCloseTo(20, 6);
+    expect(STORE_GBP_PER_KWH).toBe(WATER_STORE_GBP_PER_KWH);
+    expect(LITHIUM_GBP_PER_KWH / STORE_GBP_PER_KWH).toBeCloseTo(4, 6);
   });
 });
 
@@ -200,9 +235,12 @@ describe("loss budget", () => {
 describe("hybridPlan", () => {
   const plan = hybridPlan(DEFAULT_HYBRID);
 
-  it("sizes the sand store for the Hybrid's temperature swing", () => {
-    expect(plan.thermal.sandMassKg).toBeCloseTo(40 * 60, 6); // 2.4 t, not 450 kg
-    expect(plan.thermal.waterMassKg).toBeLessThan(plan.thermal.sandMassKg / 3);
+  it("sizes the water store for its swing, with sand alongside for comparison", () => {
+    expect(plan.thermal.storeMassKg).toBeCloseTo(12 * HYBRID_WATER_KG_PER_KWH, 9); // ≈ 258 L
+    expect(plan.thermal.sandComparison.massKg).toBeCloseTo(12 * 60, 6);
+    // Two days of the best month's collection, and the store never limits coverage.
+    expect(plan.thermal.storeDaysOfPeakCollection).toBeGreaterThan(1.5);
+    expect(plan.thermal.storeLimitedKWh).toBe(0);
   });
 
   it("PV yields UK-sensible numbers with a brutal December", () => {
@@ -268,14 +306,22 @@ describe("hybridPlan", () => {
   });
 
   it("costs are the sum of parts, including one-off thermal balance of plant", () => {
-    expect(plan.economics.systemCostGBP).toBeCloseTo(2 * 550 + 3 * 300 + 40 * 15 + 500, 6);
+    expect(plan.economics.systemCostGBP).toBeCloseTo(2 * 550 + 3 * 300 + 12 * 75 + 500, 6);
     expect(plan.economics.pvCostGBP + plan.economics.thermalCostGBP).toBeCloseTo(plan.economics.systemCostGBP, 6);
   });
 
-  it("the sand is the cheap part, and media + vessel = store", () => {
-    expect(plan.thermal.mediaCostGBP).toBeCloseTo(2400 * 0.045, 6); // ≈ £108
-    expect(plan.thermal.mediaCostGBP).toBeLessThan(plan.thermal.vesselCostGBP);
-    expect(plan.thermal.mediaCostGBP + plan.thermal.vesselCostGBP).toBeCloseTo(plan.thermal.storeCostGBP, 6);
+  it("prices the store at the sourced cylinder figure; sand's floor is kept only to compare", () => {
+    expect(plan.thermal.storeCostGBP).toBeCloseTo(12 * WATER_STORE_GBP_PER_KWH, 9);
+    expect(plan.thermal.sandComparison.costGBP).toBeCloseTo(12 * SAND_STORE_GBP_PER_KWH, 9);
+  });
+
+  it("every house tier's water store holds about two days of its best month and never limits coverage", () => {
+    for (const t of HOUSE_TIERS) {
+      const q = hybridPlan({ ...DEFAULT_HYBRID, pvKwp: t.pvKwp, collectorM2: t.collectorM2, storeKWh: t.storeKWh });
+      expect(q.thermal.storeDaysOfPeakCollection).toBeGreaterThan(1.8);
+      expect(q.thermal.storeDaysOfPeakCollection).toBeLessThan(2.5);
+      expect(q.thermal.storeLimitedKWh).toBe(0);
+    }
   });
 });
 
@@ -318,13 +364,13 @@ describe("heat-flow toy (Energy Flow panel)", () => {
     expect(s.collectedKWh).toBeCloseTo(0.6 * 3 * HYBRID_COLLECT_EFFICIENCY, 12);
   });
 
-  it("no sun and no demand: a full store decays with the storeHeatLoss time constant", () => {
+  it("no sun and no demand: a full store decays with the storeRetention time constant", () => {
     const full = { ...HEAT_FLOW_START, storedKWh: 40 };
-    const tauH = storeHeatLoss(40).timeConstantDays * 24;
+    const tauH = storeRetention(40, "water").timeConstantDays * 24;
     const s = heatFlowStep(full, { ...P, sunKWPerM2: 0, demandKW: 0, ambientC: 45 }, 1);
     // With ambient at the useful floor, useful heat decays exactly as C/UA predicts.
     expect(s.lostKWh).toBeCloseTo(40 / tauH, 9);
-    expect(hybridStoreTemperatureC(40, 40)).toBe(120);
+    expect(hybridStoreTemperatureC(40, 40)).toBe(85);
     expect(hybridStoreTemperatureC(0, 40)).toBe(45);
   });
 

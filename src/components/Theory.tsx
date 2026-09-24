@@ -10,20 +10,23 @@ import {
   HYBRID_STORE_DELTA_T_K,
   HYBRID_STORE_TOP_C,
   DEFAULT_HYBRID,
-  storeHeatLoss,
-  usefulHeatHalfLifeDays,
+  storeRetention,
+  HYBRID_WATER_KG_PER_KWH,
+  WATER_CP_KJ_PER_KG_K,
+  SAND_COMPARISON_TOP_C,
+  HYBRID_STORE_USEFUL_MIN_C,
 } from '../utils/heatloom';
 
-const DEFAULT_STORE = storeHeatLoss(DEFAULT_HYBRID.storeKWh);
-const USEFUL_HALF_LIFE_DAYS = usefulHeatHalfLifeDays(DEFAULT_STORE.timeConstantDays);
+const DEFAULT_STORE = storeRetention(DEFAULT_HYBRID.storeKWh, 'water');
+const SAND_STORE = storeRetention(DEFAULT_HYBRID.storeKWh, 'sand');
 
-/** A plain schematic: sunlight → collector → loop → sand store → home, with PV beside it. */
+/** A plain schematic: sunlight → collector → loop → store → home, with PV beside it. */
 function SystemDiagram() {
   const box = 'fill-white stroke-orange-300';
   return (
     <svg viewBox="0 0 760 260" role="img" aria-labelledby="hl-diagram-title" className="w-full max-w-4xl mx-auto h-auto">
       <title id="hl-diagram-title">
-        Heat Loom schematic: the sun heats a collector; a fluid loop carries the heat into a sand store; a coil draws heat
+        Heat Loom schematic: the sun heats a collector; a fluid loop carries the heat into a store (hot sand for the rig, a water tank for the Hybrid); a coil draws heat
         from the store for the home. Solar panels supply the home's electricity separately.
       </title>
       <defs>
@@ -40,8 +43,8 @@ function SystemDiagram() {
       <line x1="320" y1="60" x2="400" y2="60" className="stroke-orange-500" strokeWidth="3" markerEnd="url(#hl-arrow)" />
       <text x="360" y="48" textAnchor="middle" className="fill-gray-600 text-[11px]">fluid loop</text>
       <rect x="405" y="20" width="150" height="120" rx="14" className="fill-amber-100 stroke-amber-400" strokeWidth="2" />
-      <text x="480" y="70" textAnchor="middle" className="fill-gray-900 text-[14px] font-bold">Sand store</text>
-      <text x="480" y="90" textAnchor="middle" className="fill-gray-600 text-[11px]">holds days, not seasons</text>
+      <text x="480" y="70" textAnchor="middle" className="fill-gray-900 text-[14px] font-bold">Store</text>
+      <text x="480" y="90" textAnchor="middle" className="fill-gray-600 text-[11px]">sand (rig) · water (Hybrid)</text>
       <line x1="555" y1="80" x2="635" y2="80" className="stroke-red-500" strokeWidth="3" markerEnd="url(#hl-arrow)" />
       <text x="595" y="68" textAnchor="middle" className="fill-gray-600 text-[11px]">heat coil</text>
       <rect x="640" y="45" width="100" height="70" rx="12" className={box} strokeWidth="2" />
@@ -63,7 +66,7 @@ export default function Theory() {
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8">How It Works</h2>
           <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto font-light">
             Two ways to collect the sun, one way to store it: the research rig concentrates direct sunlight with mirror
-            troughs; the Hybrid uses commodity evacuated tubes. Both charge a sand store, and bought panels make the
+            troughs; the Hybrid uses commodity evacuated tubes. The rig charges a hot sand store, the Hybrid a water tank, and bought panels make the
             electricity.
           </p>
         </div>
@@ -82,7 +85,7 @@ export default function Theory() {
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Solar Collection</h3>
             <p className="text-gray-600 leading-relaxed mb-6 text-lg">
               The research rig's parabolic troughs focus direct sunlight onto evacuated receiver tubes. The Hybrid skips the
-              mirrors: evacuated tubes on the roof, charging the store to about {HYBRID_STORE_TOP_C} °C.
+              mirrors: evacuated tubes on the roof, charging a water store to about {HYBRID_STORE_TOP_C} °C.
             </p>
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-2xl border border-orange-200/50">
               <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">Research rig design targets</p>
@@ -133,9 +136,11 @@ export default function Theory() {
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Thermal Storage</h3>
             <p className="text-gray-600 leading-relaxed mb-6 text-lg">
-              A layered granular core: dense basalt around the charge coil, quartz sand as the bulk, perlite to insulate.
-              It holds days of heat, not seasons — the default Hybrid store, full, loses half its useful heat in about{' '}
-              {USEFUL_HALF_LIFE_DAYS.toFixed(0)} days.
+              The research rig's store is a layered granular core: dense basalt around the charge coil, quartz sand as the
+              bulk, perlite to insulate — sand because it takes 250 °C and more without a pressure vessel. The Hybrid's
+              store runs below 100 °C, where water wins: the default {DEFAULT_HYBRID.storeKWh} kWh tank, full, loses half its
+              useful heat in about {DEFAULT_STORE.usefulHalfLifeDays.toFixed(0)} days, against about{' '}
+              {SAND_STORE.usefulHalfLifeDays.toFixed(0)} days for sand doing the same job. Either holds days, not seasons.
             </p>
             <div className="space-y-4">
               <div className="flex items-center space-x-4 p-3 bg-gradient-to-r from-red-50 to-red-100 rounded-lg border border-red-200/50">
@@ -185,9 +190,9 @@ export default function Theory() {
                   M<sub>storage</sub> = 3600 / (c<sub>p</sub> × ΔT) kg per kWh<sub>th</sub>
                 </div>
                 <div className="text-gray-300 space-y-2 text-sm">
-                  <p>c<sub>p</sub> = {SAND_CP_KJ_PER_KG_K} kJ/kg·K for dry sand</p>
-                  <p>Rig: ΔT = {RIG_STORE_DELTA_T_K} K → {SAND_KG_PER_KWH} kg/kWh (generous: an oil loop kept to about 300 °C gives ~{Math.round(sandKgPerKWh(280))} kg/kWh — see Safety)</p>
-                  <p>Hybrid: ΔT = {HYBRID_STORE_DELTA_T_K} K → {HYBRID_SAND_KG_PER_KWH.toFixed(0)} kg/kWh</p>
+                  <p>c<sub>p</sub> = {SAND_CP_KJ_PER_KG_K} kJ/kg·K for dry sand, {WATER_CP_KJ_PER_KG_K} for water</p>
+                  <p>Rig (sand): ΔT = {RIG_STORE_DELTA_T_K} K → {SAND_KG_PER_KWH} kg/kWh (generous: an oil loop kept to about 300 °C gives ~{Math.round(sandKgPerKWh(280))} kg/kWh — see Safety)</p>
+                  <p>Hybrid (water): ΔT = {HYBRID_STORE_DELTA_T_K} K → {HYBRID_WATER_KG_PER_KWH.toFixed(1)} kg/kWh; sand from {SAND_COMPARISON_TOP_C} to {HYBRID_STORE_USEFUL_MIN_C} °C would need {HYBRID_SAND_KG_PER_KWH.toFixed(0)}</p>
                   <p>The store's 90% round trip sits in the loss chain, not here</p>
                 </div>
               </div>

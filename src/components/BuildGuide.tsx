@@ -25,8 +25,8 @@ export default function BuildGuide() {
           <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto font-light">
             An outline build for the research-grade thermal rig — parts, sequence and tests, not yet drawings or CAD.
             Two build paths exist: this one (silvered-glass troughs, evacuated receivers, ~{formatGBP(RIG_BOM_TOTAL_GBP)}) and
-            the commodity Hybrid (~{formatGBP(HYBRID_COST)} at sourced 2026 prices). Both end in a sand store, run at very
-            different temperatures. Read the Safety section before building either.
+            the commodity Hybrid (~{formatGBP(HYBRID_COST)} at sourced 2026 prices). The rig ends in a hot sand store; the
+            Hybrid in a water tank below 100 °C. Read the Safety section before building either.
           </p>
           <div className="mt-8 inline-flex flex-col sm:flex-row sm:items-center px-6 py-3 bg-gradient-to-r from-orange-100 to-red-100 text-orange-800 rounded-2xl border border-orange-200/50">
             <span className="flex items-center font-bold text-lg"><Package className="w-5 h-5 mr-3" />Research-grade thermal rig: ~{formatGBP(RIG_BOM_TOTAL_GBP)}</span>

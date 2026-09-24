@@ -15,6 +15,7 @@ import {
   DEFAULT_HYBRID,
   HYBRID_STORE_TOP_C,
   HYBRID_STORE_USEFUL_MIN_C,
+  SAND_COMPARISON_TOP_C,
   LITHIUM_GBP_PER_KWH,
   THERMAL_BOP_GBP,
   HOUSE_TIERS,
@@ -105,7 +106,7 @@ export default function Hybrid() {
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">The Hybrid — the one we'd actually build</h2>
           <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto font-light">
-            PV for electrons, evacuated-tube collectors + a sand store for heat. Heat Loom minus its weakest link
+            PV for electrons, evacuated-tube collectors + a water store for heat. Heat Loom minus its weakest link
             (the ORC), plus bought solar panels — because no garage machine beats ~£{PV_PANEL_GBP_PER_W.toFixed(2)}/W silicon.
           </p>
         </div>
@@ -144,15 +145,19 @@ export default function Hybrid() {
               <Slider label="PV array" value={cfg.pvKwp} min={0.5} max={10} step={0.5} unit="kWp" onChange={(v) => set({ pvKwp: v })} />
               <Slider label="PV used at home" value={cfg.pvSelfUse ?? 0.5} min={0.2} max={1} step={0.05} unit="" display={`${Math.round((cfg.pvSelfUse ?? 0.5) * 100)}%`} onChange={(v) => set({ pvSelfUse: v })} />
               <Slider label="Evacuated-tube collector" value={cfg.collectorM2} min={1} max={40} step={1} unit="m²" onChange={(v) => set({ collectorM2: v })} />
-              <Slider label="Sand store" value={cfg.storeKWh} min={10} max={300} step={10} unit="kWh·th" onChange={(v) => set({ storeKWh: v })} />
+              <Slider label="Water store" value={cfg.storeKWh} min={4} max={150} step={1} unit="kWh·th" onChange={(v) => set({ storeKWh: v })} />
             </div>
             <p className="text-gray-600 text-sm leading-relaxed">
-              At the tubes' {HYBRID_STORE_TOP_C} → {HYBRID_STORE_USEFUL_MIN_C} °C swing, that store is{' '}
-              {Math.round(plan.thermal.sandMassKg).toLocaleString('en-GB')} kg of dry sand ({plan.thermal.storeVolumeM3.toFixed(1)} m³) —
-              about {formatGBP(plan.thermal.mediaCostGBP)} of aggregate; the vessel, insulation and exchanger are the real
-              cost. A water tank doing the same job weighs {Math.round(plan.thermal.waterMassKg).toLocaleString('en-GB')} kg.
-              Either way it holds days, not seasons: full, it loses half its useful heat in about{' '}
-              {plan.thermal.storeHalfLifeDays.toFixed(0)} days behind 150 mm of mineral wool. It holds{' '}
+              Charged from {HYBRID_STORE_USEFUL_MIN_C} to {HYBRID_STORE_TOP_C} °C, that is{' '}
+              {Math.round(plan.thermal.storeMassKg).toLocaleString('en-GB')} litres of water ({plan.thermal.storeVolumeM3.toFixed(2)} m³) — a
+              solar cylinder, or a buffer store if it also feeds the heating. Full, it loses{' '}
+              {Math.round(plan.thermal.storeLossWhenFullW)} W and half its useful heat in about{' '}
+              {plan.thermal.storeHalfLifeDays.toFixed(0)} days behind 150 mm-equivalent insulation (a bought cylinder's factory foam
+              loses two to three times more — add a jacket). The same job in sand, charged to {SAND_COMPARISON_TOP_C} °C, would be{' '}
+              {Math.round(plan.thermal.sandComparison.massKg).toLocaleString('en-GB')} kg, lose{' '}
+              {Math.round(plan.thermal.sandComparison.lossWhenFullW)} W and half its useful heat in about{' '}
+              {plan.thermal.sandComparison.usefulHalfLifeDays.toFixed(0)} days: water stores about five times the heat per kg, so
+              its tank is smaller, with less surface to leak through, and it runs cooler. Either holds days, not seasons. It holds{' '}
               {plan.thermal.storeDaysOfPeakCollection.toFixed(1)} days of your best month's collection
               {plan.thermal.storeLimitedKWh >= 1
                 ? ` — less than a sunny day, so it caps how much heat reaches the house: a bigger store would add up to about ${Math.round(plan.thermal.storeLimitedKWh).toLocaleString('en-GB')} kWh a year. (The model sends every kWh through the store, which is pessimistic for small stores: some heat is used as it is collected.)`
@@ -173,7 +178,7 @@ export default function Hybrid() {
               />
               <CoverageCard
                 icon={<Flame className="w-5 h-5 text-red-600" />}
-                label="Heat (tubes + sand)" annual={plan.coverage.heatAnnual} winter={plan.coverage.heatWinter}
+                label="Heat (tubes + water store)" annual={plan.coverage.heatAnnual} winter={plan.coverage.heatWinter}
                 color="text-red-600"
                 note={
                   heatSurplus >= 1
@@ -260,8 +265,7 @@ export default function Hybrid() {
                 <div className="flex justify-between gap-3"><span className="text-gray-600">PV array ({plan.pv.kwp} kWp, {Math.round(plan.pv.annualKWh).toLocaleString('en-GB')} kWh/yr):</span><span className="font-bold text-gray-900">{formatGBP(plan.pv.costGBP)}</span></div>
                 <div className="flex justify-between gap-3"><span className="text-gray-600">Evacuated tubes ({plan.thermal.areaM2} m², {Math.round(plan.thermal.annualKWh).toLocaleString('en-GB')} kWh·th/yr collected):</span><span className="font-bold text-gray-900">{formatGBP(plan.thermal.costGBP)}</span></div>
                 <div className="flex justify-between gap-3"><span className="text-gray-600">Pump station + controller + fittings (once):</span><span className="font-bold text-gray-900">{formatGBP(THERMAL_BOP_GBP)}</span></div>
-                <div className="flex justify-between gap-3"><span className="text-gray-600">Sand media ({Math.round(plan.thermal.sandMassKg).toLocaleString('en-GB')} kg of aggregate):</span><span className="font-bold text-gray-900">{formatGBP(plan.thermal.mediaCostGBP)}</span></div>
-                <div className="flex justify-between gap-3"><span className="text-gray-600">Store vessel + insulation + exchanger ({cfg.storeKWh} kWh·th):</span><span className="font-bold text-gray-900">{formatGBP(plan.thermal.vesselCostGBP)}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-gray-600">Water store ({Math.round(plan.thermal.storeMassKg).toLocaleString('en-GB')} L, {cfg.storeKWh} kWh·th, twin-coil cylinder class):</span><span className="font-bold text-gray-900">{formatGBP(plan.thermal.storeCostGBP)}</span></div>
                 <div className="flex justify-between gap-3 pt-2 border-t border-gray-100"><span className="font-semibold text-gray-800">System total:</span><span className="font-bold text-gray-900">{formatGBP(e.systemCostGBP)}</span></div>
                 <div className="flex justify-between gap-3"><span className="text-gray-600">Annual savings — PV {formatGBP(e.electricSavingsGBP)} + heat {formatGBP(e.heatSavingsGBP)}:</span><span className="font-bold text-green-600">{formatGBP(e.annualSavingsGBP)}</span></div>
                 <div className="flex justify-between gap-3"><span className="text-gray-500 text-sm">…pessimistic (−10% sun, low tube efficiency):</span><span className="text-gray-500 text-sm">{formatGBP(e.pessimisticSavingsGBP)}</span></div>
@@ -273,8 +277,9 @@ export default function Hybrid() {
                 Savings count only PV used at home ({Math.round(plan.pv.selfUse * 100)}%, exports at £0) and heat that meets
                 each month's demand, with a monthly UK sun and heating shape; the store never carries summer into winter.
                 PV is valued at Ofgem's October–December 2026 capped electricity price,{' '}
-                {(ELECTRICITY_GBP_PER_KWH * 100).toFixed(1)}p; heat at what {heatPhrase} costs — {heatPriceNote}. The store's {formatGBP(STORE_GBP_PER_KWH)}/kWh is a floor,
-                and the pessimistic case varies sunshine and efficiency, not cost. Lithium would cost {formatGBP(cfg.storeKWh * LITHIUM_GBP_PER_KWH)} for
+                {(ELECTRICITY_GBP_PER_KWH * 100).toFixed(1)}p; heat at what {heatPhrase} costs — {heatPriceNote}. The store's {formatGBP(STORE_GBP_PER_KWH)}/kWh comes
+                from 250 L solar cylinder prices (bigger tanks cost less per kWh); an unvented cylinder needs a G3-qualified
+                installer, which is not priced here. The pessimistic case varies sunshine and efficiency, not cost. Lithium would cost {formatGBP(cfg.storeKWh * LITHIUM_GBP_PER_KWH)} for
                 the same number of kWh — but electrical kWh, each worth several kWh of heat. The registered claim (On Trial)
                 is annual production, not these savings.
               </p>

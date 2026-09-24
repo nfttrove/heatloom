@@ -20,7 +20,7 @@ const REGISTERED = Number(REGISTERED_HYBRID_KWH_PER_YEAR);
 const NOW = hybridProductionKWhPerYear();
 const PLAN = hybridPlan(DEFAULT_HYBRID);
 const kwh = (x: number) => Math.round(x).toLocaleString('en-GB');
-const HYBRID_TODAY = `Today's model: ${kwh(NOW)} kWh/yr (${Math.round((100 * (NOW - REGISTERED)) / REGISTERED)}%), a ${formatGBP(PLAN.economics.systemCostGBP)} system saving ${formatGBP(PLAN.economics.annualSavingsGBP)} a year, a ${PLAN.economics.paybackYears.toFixed(1)}-year payback.`;
+const HYBRID_TODAY = `Today's model: ${kwh(NOW)} kWh/yr (${Math.round((100 * (NOW - REGISTERED)) / REGISTERED)}%), with a ${DEFAULT_HYBRID.storeKWh} kWh water store in place of 40 kWh of sand, a ${formatGBP(PLAN.economics.systemCostGBP)} system saving ${formatGBP(PLAN.economics.annualSavingsGBP)} a year, a ${PLAN.economics.paybackYears.toFixed(1)}-year payback.`;
 
 // As filed: value and verdict are history and stay exactly as written. Only
 // the title, the claim type and one value of each claim are inside its hash.

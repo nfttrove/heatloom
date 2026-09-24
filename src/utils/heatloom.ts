@@ -48,17 +48,18 @@ export const COLLECTOR_EFFICIENCY: number = chainProduct(LOSS_CHAIN);
 export const COLLECTOR_EFFICIENCY_RANGE = { low: 0.55, high: 0.60 } as const;
 
 /**
- * Hybrid (evacuated tubes charging a sand store): assumptions, not
+ * Hybrid (evacuated tubes charging a water store): assumptions, not
  * measurements. Datasheet optical efficiency for evacuated tubes is
- * roughly 0.6–0.75 of aperture; heat loss grows as the store heats, and
- * charging towards 120 °C in a UK winter costs a quarter or more. No
- * mirror, no tracking.
+ * roughly 0.6–0.75 of aperture; heat loss grows as the store heats. The
+ * 0.75 was set for charging sand towards 120 °C; the water store stops at
+ * 85 °C, which should do somewhat better, but that is unmeasured, so the
+ * factor stays. No mirror, no tracking.
  */
 export const HYBRID_LOSS_CHAIN: LossStage[] = [
   { key: "tube-optics", label: "Evacuated-tube optics (η₀)", factor: 0.7, note: "datasheet 0.6–0.75 of aperture" },
   { key: "tube-heat-loss", label: "Tube heat loss at store temperature", factor: 0.75, note: "worse as the store heats and the air cools" },
   { key: "soiling", label: "Soiling", factor: 0.96, note: "between cleanings" },
-  { key: "storage", label: "Sand store charge/discharge", factor: 0.9, note: "round-trip on the store" },
+  { key: "storage", label: "Store charge/discharge", factor: 0.9, note: "round-trip through the water store's coils" },
   { key: "pipework", label: "Pipework & exchanger losses", factor: 0.85, note: "the unglamorous 15%" },
 ];
 export const HYBRID_COLLECTOR_EFFICIENCY: number = chainProduct(HYBRID_LOSS_CHAIN);
@@ -99,8 +100,9 @@ export const PV_MODULE_EFFICIENCY = 0.22;
 /** Dry quartz sand. */
 export const SAND_CP_KJ_PER_KG_K = 0.8;
 export const SAND_DENSITY_KG_M3 = 1600;
-/** Water, for comparison at the Hybrid's temperatures. */
+/** Water: the Hybrid's store. */
 export const WATER_CP_KJ_PER_KG_K = 4.18;
+export const WATER_DENSITY_KG_M3 = 1000;
 
 /** Sand mass per kWh-thermal for a store that swings through ΔT kelvin. */
 export function sandKgPerKWh(deltaTK: number): number {
@@ -116,21 +118,33 @@ export const RIG_STORE_DELTA_T_K = 400;
 export const SAND_KG_PER_KWH = sandKgPerKWh(RIG_STORE_DELTA_T_K); // 11.25
 
 /**
- * Hybrid: evacuated tubes and a glycol loop can charge the store to about
- * 120 °C, and its heat is useful for heating down to about 45 °C.
+ * Hybrid: a water store. A twin-coil solar cylinder (or a buffer store when
+ * it also feeds the heating) is charged to about 85 °C, where solar
+ * controllers stop the pump, below the cylinder's 90–95 °C
+ * temperature-and-pressure relief; its heat is useful down to about 45 °C.
  */
-export const HYBRID_STORE_TOP_C = 120;
+export const HYBRID_STORE_TOP_C = 85;
 export const HYBRID_STORE_USEFUL_MIN_C = 45;
 export const HYBRID_STORE_DELTA_T_K = HYBRID_STORE_TOP_C - HYBRID_STORE_USEFUL_MIN_C;
-export const HYBRID_SAND_KG_PER_KWH = sandKgPerKWh(HYBRID_STORE_DELTA_T_K);
-/** An unpressurised water tank at the same job: 95 °C down to 45 °C. */
-export const HYBRID_WATER_KG_PER_KWH = 3600 / (WATER_CP_KJ_PER_KG_K * (95 - HYBRID_STORE_USEFUL_MIN_C));
+export const HYBRID_WATER_KG_PER_KWH = 3600 / (WATER_CP_KJ_PER_KG_K * HYBRID_STORE_DELTA_T_K);
+/**
+ * The same job in sand, for comparison. Sand needs no pressure vessel, so it
+ * gets the tubes' full 120 °C — a wider swing than water's.
+ */
+export const SAND_COMPARISON_TOP_C = 120;
+export const HYBRID_SAND_KG_PER_KWH = sandKgPerKWh(SAND_COMPARISON_TOP_C - HYBRID_STORE_USEFUL_MIN_C);
+
+export const STORE_MEDIA = {
+  water: { label: "Water", cpKJPerKgK: WATER_CP_KJ_PER_KG_K, densityKgM3: WATER_DENSITY_KG_M3, topC: HYBRID_STORE_TOP_C, floorC: HYBRID_STORE_USEFUL_MIN_C },
+  sand: { label: "Sand", cpKJPerKgK: SAND_CP_KJ_PER_KG_K, densityKgM3: SAND_DENSITY_KG_M3, topC: SAND_COMPARISON_TOP_C, floorC: HYBRID_STORE_USEFUL_MIN_C },
+} as const;
+export type StoreMedium = keyof typeof STORE_MEDIA;
 
 /**
  * Standing loss: a store cools with time constant τ = C / UA. Cylinder with
  * height = diameter, insulated all round with conductance U (W/m²·K);
- * 150 mm of mineral wool is ≈ 0.25. Sand heat capacity only — the vessel
- * and exchanger are ignored, which slightly flatters the store.
+ * 150 mm of mineral wool is ≈ 0.25. The medium's heat capacity only — the
+ * vessel and exchanger are ignored, which slightly flatters the store.
  */
 export const STORE_U_W_PER_M2K = 0.25;
 /**
@@ -141,17 +155,23 @@ export const RIG_STORE_U_W_PER_M2K = 0.5;
 /** Where a store sits: UK annual mean outdoor or garage temperature (assumption). */
 export const STORE_AMBIENT_C = 10;
 
-/** Volume and outside area of the cylinder (height = diameter) holding `massKg` of sand. */
-export function sandStoreGeometry(massKg: number): { volumeM3: number; areaM2: number } {
-  const volumeM3 = massKg / SAND_DENSITY_KG_M3;
+/** Volume and outside area of the cylinder (height = diameter) holding `massKg` at `densityKgM3`. */
+export function cylinderGeometry(massKg: number, densityKgM3: number): { volumeM3: number; areaM2: number } {
+  const volumeM3 = massKg / densityKgM3;
   // V = π r² h with h = 2r → r = (V / 2π)^(1/3); area = 2πr² + 2πrh = 6πr²
   const r = Math.cbrt(volumeM3 / (2 * Math.PI));
   return { volumeM3, areaM2: 6 * Math.PI * r * r };
 }
 
+/** The same geometry for sand (the research rig's store). */
+export function sandStoreGeometry(massKg: number): { volumeM3: number; areaM2: number } {
+  return cylinderGeometry(massKg, SAND_DENSITY_KG_M3);
+}
+
+/** A sand store swinging through deltaTK: size and cooling (the research rig). */
 export function storeHeatLoss(
   storeKWh: number,
-  deltaTK: number = HYBRID_STORE_DELTA_T_K,
+  deltaTK: number,
   uWPerM2K: number = STORE_U_W_PER_M2K
 ): { massKg: number; volumeM3: number; areaM2: number; timeConstantDays: number; halfLifeDays: number } {
   const massKg = storeKWh * sandKgPerKWh(deltaTK);
@@ -164,8 +184,8 @@ export function storeHeatLoss(
 
 /**
  * Days until a full store has lost half its *useful* heat — the heat above
- * floorC. Sooner than halfLifeDays (the half-life of the temperature above
- * ambient), because heat below the floor keeps leaking but is no use.
+ * floorC. Sooner than the half-life of the temperature above ambient
+ * (τ·ln2), because heat below the floor keeps leaking but is no use.
  */
 export function usefulHeatHalfLifeDays(
   timeConstantDays: number,
@@ -175,6 +195,49 @@ export function usefulHeatHalfLifeDays(
 ): number {
   const x = (0.5 * (topC - floorC) + (floorC - ambientC)) / (topC - ambientC);
   return -timeConstantDays * Math.log(x);
+}
+
+export interface StoreRetention {
+  medium: StoreMedium;
+  massKg: number;
+  volumeM3: number;
+  areaM2: number;
+  uaWPerK: number;
+  timeConstantDays: number;
+  usefulHalfLifeDays: number;
+  /** Standing loss of a full store, W. */
+  lossWhenFullW: number;
+}
+
+/**
+ * A Hybrid store holding `storeKWh` of useful heat in `medium`. Both media
+ * get the same 150 mm-equivalent insulation, so the comparison is like for
+ * like. Water wins at these temperatures: about five times the heat per kg,
+ * so a smaller vessel with less surface, run cooler. (A bought cylinder's
+ * factory foam loses roughly two to three times more than this unless it is
+ * jacketed.)
+ */
+export function storeRetention(
+  storeKWh: number,
+  medium: StoreMedium = "water",
+  uWPerM2K: number = STORE_U_W_PER_M2K,
+  ambientC: number = STORE_AMBIENT_C
+): StoreRetention {
+  const m = STORE_MEDIA[medium];
+  const massKg = (Math.max(0, storeKWh) * 3600) / (m.cpKJPerKgK * (m.topC - m.floorC));
+  const { volumeM3, areaM2 } = cylinderGeometry(massKg, m.densityKgM3);
+  const uaWPerK = uWPerM2K * areaM2;
+  const timeConstantDays = (massKg * m.cpKJPerKgK * 1000) / uaWPerK / 86400;
+  return {
+    medium,
+    massKg,
+    volumeM3,
+    areaM2,
+    uaWPerK,
+    timeConstantDays,
+    usefulHalfLifeDays: usefulHeatHalfLifeDays(timeConstantDays, m.topC, m.floorC, ambientC),
+    lossWhenFullW: uaWPerK * (m.topC - ambientC),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -391,15 +454,24 @@ export const COLLECTOR_GBP_PER_M2 = 300;
  */
 export const THERMAL_BOP_GBP = 500;
 /**
- * Sand store all-in, GBP per kWh-thermal. Sourced Aug 2026 DIY parts:
- * drum 50-100, rockwool 100 mm 60-100/pack, ceramic fibre hot-face
- * 50-100, copper coil 50-100 => 6-10/kWh achievable; 15 keeps margin.
- * At the Hybrid's temperatures the store is several times bulkier than
- * those parts assumed (see HYBRID_SAND_KG_PER_KWH), so treat 15 as a floor.
+ * Water store, GBP per kWh of useful heat (85 → 45 °C). Sourced Sep 2026:
+ * 250 L twin-coil solar cylinders cost £813–901 including VAT (Trading
+ * Depot, SNH Trade Centre, Discount Heating) and hold about 11.6 kWh at this
+ * swing, so £70–78/kWh; a 500 L buffer tank is £1,290 (Mad About Heat),
+ * about £56/kWh before a coil. 75 keeps the small-cylinder figure. An
+ * unvented cylinder must be fitted by a G3-qualified installer (Building
+ * Regulations Part G); that labour is not priced here.
  */
-export const STORE_GBP_PER_KWH = 15;
-/** The sand itself: builder's sand, ~£45/tonne. */
-export const SAND_MEDIA_GBP_PER_KG = 0.045;
+export const WATER_STORE_GBP_PER_KWH = 75;
+/**
+ * The retired sand store, for the comparison only: Aug 2026 DIY parts
+ * (drum, rockwool, ceramic fibre, copper coil) came to 6–10/kWh; 15 kept
+ * margin. The store was several times bulkier than those parts assumed, so
+ * 15 is a floor — and the sand itself, at about £45 a tonne, is the cheap part.
+ */
+export const SAND_STORE_GBP_PER_KWH = 15;
+/** What the Hybrid's store costs per kWh: water. */
+export const STORE_GBP_PER_KWH = WATER_STORE_GBP_PER_KWH;
 /** Lithium home storage, GBP per kWh (electrical), for the comparison the site makes. */
 export const LITHIUM_GBP_PER_KWH = 300;
 
@@ -487,21 +559,19 @@ export interface HybridPlan {
     summerKWhPerDay: number;
     efficiency: number;
     costGBP: number;
-    sandMassKg: number;
+    /** The water store: mass, volume and standing loss (storeRetention). */
+    storeMassKg: number;
     storeVolumeM3: number;
+    storeLossWhenFullW: number;
     /** Days for a full store to lose half its useful heat (usefulHeatHalfLifeDays). */
     storeHalfLifeDays: number;
     /** Store capacity ÷ the best month's daily collection. */
     storeDaysOfPeakCollection: number;
     /** Heat lost to the store-size cap alone, kWh/yr: > 0 means a bigger store would add coverage. */
     storeLimitedKWh: number;
-    /** A water tank doing the same job (95 → 45 °C), for comparison. */
-    waterMassKg: number;
     storeCostGBP: number;
-    /** The aggregate itself — a small fraction of the store's cost. */
-    mediaCostGBP: number;
-    /** Vessel + insulation + exchanger = the rest. */
-    vesselCostGBP: number;
+    /** The same job in sand (120 → 45 °C, same insulation), for comparison. */
+    sandComparison: StoreRetention & { costGBP: number };
   };
   coverage: {
     electricAnnual: number;
@@ -585,8 +655,8 @@ export function hybridPlan(p: HybridInput): HybridPlan {
   const collectorCost = p.collectorM2 * COLLECTOR_GBP_PER_M2;
   const storeCost = p.storeKWh * STORE_GBP_PER_KWH;
   const systemCost = pvCost + collectorCost + storeCost + THERMAL_BOP_GBP;
-  const sandMassKg = p.storeKWh * HYBRID_SAND_KG_PER_KWH;
-  const loss = storeHeatLoss(p.storeKWh);
+  const water = storeRetention(p.storeKWh, "water");
+  const sand = storeRetention(p.storeKWh, "sand");
 
   const elDemandYear = p.electricKWhPerDay * 365;
   const heatDemandYear = p.heatKWhPerDay * 365;
@@ -627,15 +697,14 @@ export function hybridPlan(p: HybridInput): HybridPlan {
       summerKWhPerDay: peakThermal,
       efficiency: HYBRID_COLLECTOR_EFFICIENCY,
       costGBP: collectorCost,
-      sandMassKg,
-      storeVolumeM3: loss.volumeM3,
-      storeHalfLifeDays: usefulHeatHalfLifeDays(loss.timeConstantDays),
+      storeMassKg: water.massKg,
+      storeVolumeM3: water.volumeM3,
+      storeLossWhenFullW: water.lossWhenFullW,
+      storeHalfLifeDays: water.usefulHalfLifeDays,
       storeDaysOfPeakCollection: peakThermal > 0 ? p.storeKWh / peakThermal : Infinity,
       storeLimitedKWh: central.storeLimitedKWh,
-      waterMassKg: p.storeKWh * HYBRID_WATER_KG_PER_KWH,
       storeCostGBP: storeCost,
-      mediaCostGBP: sandMassKg * SAND_MEDIA_GBP_PER_KG,
-      vesselCostGBP: storeCost - sandMassKg * SAND_MEDIA_GBP_PER_KG,
+      sandComparison: { ...sand, costGBP: p.storeKWh * SAND_STORE_GBP_PER_KWH },
     },
     coverage: {
       electricAnnual: central.pvUsedKWh / Math.max(elDemandYear, 0.1),
@@ -665,21 +734,31 @@ export function hybridPlan(p: HybridInput): HybridPlan {
 // The site's default plan and its registered claims
 // ---------------------------------------------------------------------------
 
-/** The default Hybrid every headline number on the site describes. */
+/**
+ * The default Hybrid every headline number on the site describes. The
+ * registered claims (On Trial) described a 40 kWh sand store; the store is
+ * now 12 kWh of water — a 250-litre-class cylinder — and production (the
+ * registered value) does not depend on it.
+ */
 export const DEFAULT_HYBRID: HybridInput = {
   electricKWhPerDay: 8,
   heatKWhPerDay: 30,
   pvKwp: 2,
   collectorM2: 3,
-  storeKWh: 40,
+  storeKWh: 12,
   dniAnnual: 3,
 };
 
-/** The three house tiers the Hybrid section prices. */
+/**
+ * The three house tiers the Hybrid section prices. Each water store holds
+ * about two days of its collector's best-month output: past a day or two a
+ * bigger store adds cost, not coverage (the model's store cap), and the
+ * second day is margin for sunny spells the monthly model can't see.
+ */
 export const HOUSE_TIERS = [
-  { name: "Starter", rig: "2 kWp PV + 3 m² + 40 kWh sand", pvKwp: 2, collectorM2: 3, storeKWh: 40 },
-  { name: "Half-heat house", rig: "4 kWp PV + 10 m² + 100 kWh sand", pvKwp: 4, collectorM2: 10, storeKWh: 100 },
-  { name: "Whole-house", rig: "4 kWp PV + 20 m² + 150 kWh sand", pvKwp: 4, collectorM2: 20, storeKWh: 150 },
+  { name: "Starter", rig: "2 kWp PV + 3 m² + 12 kWh water", pvKwp: 2, collectorM2: 3, storeKWh: 12 },
+  { name: "Half-heat house", rig: "4 kWp PV + 10 m² + 40 kWh water", pvKwp: 4, collectorM2: 10, storeKWh: 40 },
+  { name: "Whole-house", rig: "4 kWp PV + 20 m² + 75 kWh water", pvKwp: 4, collectorM2: 20, storeKWh: 75 },
 ] as const;
 
 /**
@@ -747,14 +826,14 @@ export function hybridStoreTemperatureC(storedKWh: number, capacityKWh: number):
 
 /**
  * One step of a constant-sun, constant-demand heat balance through the
- * Hybrid's store. Standing loss follows the store's temperature above
- * ambient with the same time constant as storeHeatLoss. The books always
+ * Hybrid's water store. Standing loss follows the store's temperature above
+ * ambient with the same time constant as storeRetention. The books always
  * balance: collected = delivered + lost + dumped + stored.
  */
 export function heatFlowStep(s: HeatFlowState, p: HeatFlowParams, dtHours: number): HeatFlowState {
   const capacity = Math.max(0, p.capacityKWh);
   const collected = Math.max(0, p.sunKWPerM2) * Math.max(0, p.areaM2) * HYBRID_COLLECT_EFFICIENCY * dtHours;
-  const tauHours = capacity > 0 ? storeHeatLoss(capacity).timeConstantDays * 24 : Infinity;
+  const tauHours = capacity > 0 ? storeRetention(capacity, "water").timeConstantDays * 24 : Infinity;
   const kWhPerK = capacity / HYBRID_STORE_DELTA_T_K;
   const aboveAmbient = hybridStoreTemperatureC(s.storedKWh, capacity) - (p.ambientC ?? STORE_AMBIENT_C);
   const lost = Math.min(s.storedKWh + collected, Math.max(0, (kWhPerK * aboveAmbient * dtHours) / tauHours));

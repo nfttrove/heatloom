@@ -20,6 +20,8 @@ const USED = PLAN.pv.usedKWh + PLAN.thermal.usedKWh;
 const DEC_HEAT_DAYS = DEFAULT_HYBRID.storeKWh / (DEFAULT_HYBRID.heatKWhPerDay * HEAT_DEMAND_MONTHLY[DECEMBER]);
 const kwh = (x: number) => Math.round(x).toLocaleString('en-GB');
 const WATER_SHARE_PCT = Math.round((100 * HYBRID_WATER_KG_PER_KWH) / HYBRID_SAND_KG_PER_KWH);
+const SAND = PLAN.thermal.sandComparison;
+const HOLDS_LONGER = PLAN.thermal.storeHalfLifeDays / SAND.usefulHalfLifeDays;
 
 export default function Hero() {
   return (
@@ -43,7 +45,7 @@ export default function Hero() {
           </h1>
 
           <p className="text-2xl text-gray-700 mb-16 max-w-4xl mx-auto leading-relaxed font-light">
-            Solar heat in <span className="font-semibold text-red-600">a store of sand</span> that carries sunny days into the
+            Solar heat in <span className="font-semibold text-red-600">a tank of water</span> that carries sunny days into the
             evenings and cloudy days after — with <span className="font-semibold text-blue-600">bought solar panels</span> for the electrons,
             because no garage machine beats ~£{PV_PANEL_GBP_PER_W.toFixed(2)}/W silicon. Every number below is modelled; nothing has been built yet.
           </p>
@@ -67,13 +69,14 @@ export default function Hero() {
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Heat, Stored for Days</h3>
             <p className="text-gray-600 leading-relaxed text-lg">
-              A sand store's parts cost from about {formatGBP(STORE_GBP_PER_KWH)} per kWh of heat against ~{formatGBP(LITHIUM_GBP_PER_KWH)} per kWh for
-              lithium — though a kWh of heat is worth far less than a kWh of electricity. Sand itself doesn't burn or wear out; the hot loop
-              around it can (see Safety). The default {DEFAULT_HYBRID.storeKWh} kWh store is {kwh(PLAN.thermal.sandMassKg)} kg of sand, about{' '}
-              {DEC_HEAT_DAYS.toFixed(1)} days of December heating, and a full store loses half its useful heat in ~{PLAN.thermal.storeHalfLifeDays.toFixed(0)} days.
+              The default store is a {kwh(PLAN.thermal.storeMassKg)}-litre solar cylinder holding {DEFAULT_HYBRID.storeKWh} kWh of heat — about{' '}
+              {DEC_HEAT_DAYS.toFixed(1)} days of December heating. Full, it loses half its useful heat in ~{PLAN.thermal.storeHalfLifeDays.toFixed(0)} days;
+              the same job in sand would weigh {(SAND.massKg / PLAN.thermal.storeMassKg).toFixed(1)}× as much and lose it in ~{SAND.usefulHalfLifeDays.toFixed(0)} days.
+              Water storage costs about {formatGBP(STORE_GBP_PER_KWH)} per kWh of heat against ~{formatGBP(LITHIUM_GBP_PER_KWH)} per kWh for lithium — though a
+              kWh of heat is worth far less than a kWh of electricity.
             </p>
             <div className="mt-6 pt-6 border-t border-red-100">
-              <div className="text-red-600 font-bold text-sm">Up to {Math.round(LITHIUM_GBP_PER_KWH / STORE_GBP_PER_KWH)}× Cheaper per kWh Than Lithium (heat, not electricity)</div>
+              <div className="text-red-600 font-bold text-sm">Keeps Its Heat {HOLDS_LONGER.toFixed(1)}× Longer Than Sand (same insulation)</div>
             </div>
           </div>
 
@@ -82,7 +85,7 @@ export default function Hero() {
               <Layers className="w-8 h-8 text-white" />
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-6">The Hybrid</h3>
-            <p className="text-gray-600 leading-relaxed text-lg">Evacuated tubes + sand store for heat, PV for electricity — and we removed our own turbine, with the Carnot arithmetic to show why. Coverage quoted annual <em>and</em> December.</p>
+            <p className="text-gray-600 leading-relaxed text-lg">Evacuated tubes + a water store for heat, PV for electricity — and we removed our own turbine, with the Carnot arithmetic to show why. Coverage quoted annual <em>and</em> December.</p>
             <div className="mt-6 pt-6 border-t border-orange-100">
               <div className="text-orange-600 font-bold text-sm">{PLAN.economics.paybackYears.toFixed(1)}-Year Payback Against Gas (UK Model)</div>
             </div>
@@ -111,14 +114,14 @@ export default function Hero() {
                   <div className="w-4 h-4 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full mt-1.5 flex-shrink-0"></div>
                   <div>
                     <h4 className="text-white font-bold text-lg mb-2">Storage, Sized Honestly</h4>
-                    <p className="text-gray-300 leading-relaxed">Collectors are commodity. A sand store is cheap per kWh and the sand itself doesn't wear out, but at house scale it holds days, not seasons — and at the Hybrid's temperatures a water tank does the same job in about {WATER_SHARE_PCT}% of the weight. We show both.</p>
+                    <p className="text-gray-300 leading-relaxed">Collectors and cylinders are commodity. At the Hybrid's temperatures water beats sand: about {WATER_SHARE_PCT}% of the weight, and with the same insulation it keeps its useful heat {HOLDS_LONGER.toFixed(1)}× as long. At house scale either holds days, not seasons. Sand earns its place above 100 °C, where water needs a pressure vessel — the retired rig's territory.</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
                   <div className="w-4 h-4 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full mt-1.5 flex-shrink-0"></div>
                   <div>
                     <h4 className="text-white font-bold text-lg mb-2">Few Moving Parts</h4>
-                    <p className="text-gray-300 leading-relaxed">The research rig's thermosiphon loop needs no pump; the Hybrid's commodity tubes use a small pump station, costed in the ledger. Sand doesn't wear out — the loop, fluid and insulation are what need looking after.</p>
+                    <p className="text-gray-300 leading-relaxed">The research rig's thermosiphon loop needs no pump; the Hybrid's commodity tubes use a small pump station, costed in the ledger. What needs looking after is the loop, its glycol and the cylinder's safety valves.</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
@@ -133,7 +136,7 @@ export default function Hero() {
             <div className="bg-gradient-to-br from-orange-500/10 to-red-500/10 rounded-3xl p-10 border border-orange-500/20">
               <div className="text-center mb-8">
                 <div className="text-5xl md:text-6xl font-black text-orange-400 mb-4">{kwh(PRODUCED)} kWh/yr</div>
-                <p className="text-white text-xl font-medium">produced by the default Hybrid ({DEFAULT_HYBRID.pvKwp} kWp PV + {DEFAULT_HYBRID.collectorM2} m² tubes + {DEFAULT_HYBRID.storeKWh} kWh sand) — {kwh(USED)} of it used at home</p>
+                <p className="text-white text-xl font-medium">produced by the default Hybrid ({DEFAULT_HYBRID.pvKwp} kWp PV + {DEFAULT_HYBRID.collectorM2} m² tubes + {DEFAULT_HYBRID.storeKWh} kWh water) — {kwh(USED)} of it used at home</p>
                 <p className="text-gray-400 text-sm mt-2">Modelled, not measured. The registered claim is {Number(REGISTERED_HYBRID_KWH_PER_YEAR).toLocaleString('en-GB')} — see On Trial.</p>
               </div>
               <div className="grid grid-cols-2 gap-8">

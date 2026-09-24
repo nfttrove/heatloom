@@ -7,8 +7,7 @@ import {
   ORC_EFFICIENCY,
   heatFlowStep,
   hybridStoreTemperatureC,
-  storeHeatLoss,
-  usefulHeatHalfLifeDays,
+  storeRetention,
   type HeatFlowParams,
   type HeatFlowState,
 } from '../utils/heatloom';
@@ -17,7 +16,7 @@ import {
 const HOURS_PER_FRAME = 0.05;
 const PEAK_SUN_KW_M2 = 1.0;
 const CAPACITY_KWH = DEFAULT_HYBRID.storeKWh;
-const HALF_LIFE_DAYS = usefulHeatHalfLifeDays(storeHeatLoss(CAPACITY_KWH).timeConstantDays);
+const HALF_LIFE_DAYS = storeRetention(CAPACITY_KWH, 'water').usefulHalfLifeDays;
 
 const one = (x: number) => x.toFixed(1);
 const two = (x: number) => x.toFixed(2);
@@ -83,7 +82,7 @@ export default function EnergyFlow() {
             Energy Flow
           </h2>
           <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto font-light">
-            The Hybrid's heat side as a toy balance: sunlight on the tubes, heat into the {CAPACITY_KWH} kWh sand store,
+            The Hybrid's heat side as a toy balance: sunlight on the tubes, heat into the {CAPACITY_KWH} kWh water store,
             heat out to the house. Constant sun and constant demand, simulated at about three hours a second — and the
             books balance at every step.
           </p>
@@ -142,7 +141,7 @@ export default function EnergyFlow() {
             <FlowArrow active={collectedKW > 0 && !storeFull} />
             <div className="bg-gradient-to-br from-purple-500/20 to-violet-500/20 p-5 rounded-2xl border border-purple-500/30 text-center">
               <Battery className="w-10 h-10 text-purple-400 mx-auto mb-2" />
-              <h4 className="font-bold text-white">Sand store</h4>
+              <h4 className="font-bold text-white">Water store</h4>
               <p className="text-purple-300 text-lg mt-1">
                 {one(sim.storedKWh)} / {CAPACITY_KWH} kWh
               </p>

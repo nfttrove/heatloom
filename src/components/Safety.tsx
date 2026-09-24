@@ -1,5 +1,5 @@
 import { Shield, AlertCircle, CheckCircle, Wrench, Eye, Bell, Cog, Flame, Sun, Gauge, Weight, Thermometer } from 'lucide-react';
-import { storeHeatLoss, sandKgPerKWh, DEFAULT_HYBRID, HYBRID_STORE_TOP_C, RIG_STORE_TOP_C, SAND_KG_PER_KWH } from '../utils/heatloom';
+import { storeRetention, sandKgPerKWh, DEFAULT_HYBRID, HOUSE_TIERS, HYBRID_STORE_TOP_C, RIG_STORE_TOP_C, SAND_KG_PER_KWH } from '../utils/heatloom';
 
 // The research rig's concentration (Theory) and a clear-sky direct beam.
 const CONCENTRATION = { low: 20, high: 40 };
@@ -8,8 +8,9 @@ const CLEAR_SKY_DNI_KW_M2 = 0.8;
 const STEAM_BAR_AT_250C = 39.7;
 const STEAM_BAR_AT_350C = 165.3;
 const WATER_CRITICAL_C = 374;
-const STEAM_BAR_AT_120C = 2.0;
-const DEFAULT_STORE = storeHeatLoss(DEFAULT_HYBRID.storeKWh);
+const DEFAULT_STORE = storeRetention(DEFAULT_HYBRID.storeKWh, 'water');
+const BIGGEST_TIER = HOUSE_TIERS[HOUSE_TIERS.length - 1];
+const BIGGEST_STORE = storeRetention(BIGGEST_TIER.storeKWh, 'water');
 
 const HAZARDS = [
   {
@@ -20,7 +21,7 @@ const HAZARDS = [
   {
     icon: <Gauge className="w-6 h-6" />,
     title: 'Steam and pressure',
-    text: `Water boils wherever it meets a surface above 100 °C once the flow stops. Trapped in the rig's store it would reach about ${STEAM_BAR_AT_250C.toFixed(0)} bar at 250 °C and ${STEAM_BAR_AT_350C.toFixed(0)} bar at 350 °C, and the store runs to ${RIG_STORE_TOP_C} °C — past water's ${WATER_CRITICAL_C} °C critical point, beyond anything a DIY coil can hold. Keep water out of the rig's store entirely: take heat out through the oil loop and an external exchanger with its own temperature limit. The Hybrid's ${HYBRID_STORE_TOP_C} °C store makes about ${STEAM_BAR_AT_120C.toFixed(0)} bar: use pressure-rated parts and a relief valve sized for full boil-off, and a thermostatic mixing valve rated for the hottest water the coil can deliver — many are rated only to about 90 °C, so add a high-limit cutoff if the store runs hotter.`,
+    text: `Water boils wherever it meets a surface above 100 °C once the flow stops. Trapped in the rig's store it would reach about ${STEAM_BAR_AT_250C.toFixed(0)} bar at 250 °C and ${STEAM_BAR_AT_350C.toFixed(0)} bar at 350 °C, and the store runs to ${RIG_STORE_TOP_C} °C — past water's ${WATER_CRITICAL_C} °C critical point, beyond anything a DIY coil can hold. Keep water out of the rig's store entirely: take heat out through the oil loop and an external exchanger with its own temperature limit. The Hybrid's water store stays below 100 °C (it charges to ${HYBRID_STORE_TOP_C} °C) but is still a pressure hazard: an unvented cylinder must have its temperature-and-pressure relief valve and be fitted by a G3-qualified installer; a vented store needs its open vent kept clear. Fit a thermostatic mixing valve rated for the hottest water the store delivers — water at 60 °C and above scalds in seconds.`,
   },
   {
     icon: <Thermometer className="w-6 h-6" />,
@@ -35,7 +36,7 @@ const HAZARDS = [
   {
     icon: <Weight className="w-6 h-6" />,
     title: 'Weight and hot surfaces',
-    text: `The default ${DEFAULT_HYBRID.storeKWh} kWh Hybrid store is about ${(DEFAULT_STORE.massKg / 1000).toFixed(1)} t of sand in ${DEFAULT_STORE.volumeM3.toFixed(1)} m³ — it belongs on a ground-level slab, not a floor or a roof. Guard hot vessels and pipes from children and pets.`,
+    text: `The default ${DEFAULT_HYBRID.storeKWh} kWh Hybrid store is about ${Math.round(DEFAULT_STORE.massKg)} kg of water plus its cylinder — check the floor can carry it. The ${BIGGEST_TIER.name.toLowerCase()} tier's ${BIGGEST_TIER.storeKWh} kWh is about ${(BIGGEST_STORE.massKg / 1000).toFixed(1)} t and belongs on a ground-level slab. The retired rig's hot sand store weighs tonnes too. Guard hot vessels and pipes from children and pets.`,
   },
 ];
 
@@ -77,7 +78,7 @@ export default function Safety() {
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-8">Safety & Maintenance</h2>
           <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto font-light">
-            Concentrated sunlight, hot oil, steam and tonnes of hot sand can hurt people. This is a checklist, not a
+            Concentrated sunlight, hot oil, steam, scalding water and tonnes of hot material can hurt people. This is a checklist, not a
             certification: have hot, pressurised or concentrating systems checked by a competent professional, and follow
             local building codes.
           </p>

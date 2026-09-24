@@ -38,7 +38,7 @@ export default function ROI() {
                   <h4 className="font-bold text-gray-900 mb-2">System Cost</h4>
                   <p className="text-3xl font-bold text-green-700">{formatGBP(E.systemCostGBP)}</p>
                   <p className="text-gray-600 text-sm">
-                    {DEFAULT_HYBRID.pvKwp} kWp PV + {DEFAULT_HYBRID.collectorM2} m² evacuated tubes + {DEFAULT_HYBRID.storeKWh} kWh sand store + pump
+                    {DEFAULT_HYBRID.pvKwp} kWp PV + {DEFAULT_HYBRID.collectorM2} m² evacuated tubes + {DEFAULT_HYBRID.storeKWh} kWh water store (a solar cylinder) + pump
                     station and controller (sourced 2026 DIY prices; no installer labour)
                   </p>
                 </div>
@@ -75,7 +75,7 @@ export default function ROI() {
                   </div>
                   <hr className="border-gray-200" />
                   <div className="flex justify-between items-center gap-3">
-                    <span className="text-gray-700">Heat collected (tubes + sand)</span>
+                    <span className="text-gray-700">Heat collected (tubes + water store)</span>
                     <span className="font-bold text-red-700">{kwh(PLAN.thermal.annualKWh)} kWh<sub>th</sub>/yr</span>
                   </div>
                   <div className="flex justify-between items-center gap-3">
@@ -93,7 +93,10 @@ export default function ROI() {
                 <ul className="space-y-2 text-sm">
                   <li>• Using all the PV at home: {ALL_SELF_USED.economics.paybackYears.toFixed(1)} years if daytime loads can absorb it; with a {BATTERY_KWH} kWh battery ({formatGBP(BATTERY_GBP)}) at best {WITH_BATTERY_PAYBACK.toFixed(1)} years</li>
                   <li>• If the heat displaces {HEAT_SOURCES.heatPump.phrase} rather than gas: {VS_HEAT_PUMP.economics.paybackYears.toFixed(1)} years; direct electric heating: {VS_ELECTRIC.economics.paybackYears.toFixed(1)} years</li>
-                  <li>• A bigger sand store: doubling it raises the cost to {formatGBP(BIG_STORE.economics.systemCostGBP)} and changes coverage not at all — it carries days, not seasons</li>
+                  <li>• A bigger water store: doubling it raises the cost to {formatGBP(BIG_STORE.economics.systemCostGBP)} and{' '}
+                    {BIG_STORE.thermal.usedKWh - PLAN.thermal.usedKWh < 1
+                      ? `changes coverage not at all — it already holds ${PLAN.thermal.storeDaysOfPeakCollection.toFixed(1)} days of the best month's collection`
+                      : `adds ${kwh(BIG_STORE.thermal.usedKWh - PLAN.thermal.usedKWh)} kWh of heat a year`}</li>
                   <li>• Field data: once builders file measurements, they replace these predictions</li>
                 </ul>
               </div>
