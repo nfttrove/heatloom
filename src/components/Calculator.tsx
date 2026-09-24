@@ -86,7 +86,7 @@ export default function Calculator({ initial }: { initial?: Partial<LoomInput> }
               onChange={(v) => set({ pvKwp: Math.round(v * 10) / 10 })} />
             <Slider id="calc-selfuse" label="Daytime use" value={cfg.pvSelfUse} min={0.2} max={0.8} step={0.05}
               display={pct(cfg.pvSelfUse)}
-              hint={`How much of the output you'd use as it's made — higher if someone is home in the day. The house can't use more than 60% of its day while the sun is up, so over the year it uses ${pct(plan.pv.houseKWh / Math.max(plan.pv.annualKWh, 1e-9))} of this build's output.`}
+              hint={`How much of the output you'd use as it's made — higher if someone is home in the day. The house always takes its daytime base load when the panels make it, and can't use more than 60% of its day while the sun is up, so over the year it uses ${pct(plan.pv.houseKWh / Math.max(plan.pv.annualKWh, 1e-9))} of this build's output.`}
               onChange={(v) => set({ pvSelfUse: v })} />
             <div>
               <label htmlFor="calc-controller" className="block font-bold text-gray-900 mb-2">Sending the spare to the tank</label>
