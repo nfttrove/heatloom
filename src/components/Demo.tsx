@@ -430,7 +430,8 @@ export default function Demo() {
                 {Math.round(RIG_COLLECT_EFFICIENCY * 100)}% of it into the store (the site's {Math.round(COLLECTOR_EFFICIENCY * 100)}%
                 loss chain without its storage stage, because the store's standing loss is simulated here instead, through
                 150 mm of mineral wool that insulates about half as well at these temperatures); once the store passes {params.dispatchAboveC} °C the ORC takes{' '}
-                {Math.round(params.dispatchFraction * 100)}% of the incoming heat; at {RIG_STORE_TOP_C} °C the troughs defocus.
+                {Math.round(params.dispatchFraction * 100)}% of the incoming heat; at {RIG_STORE_TOP_C} °C the troughs defocus — a temperature
+                common heat-transfer oils are not rated for (see Safety).
                 Nothing here has been built and measured.
               </p>
             </div>

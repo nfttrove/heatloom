@@ -412,7 +412,7 @@ export const HEAT_SOURCES = {
   gas: { label: "Gas boiler", phrase: "a gas boiler", system: "boiler", gbpPerKWh: GAS_GBP_PER_KWH / BOILER_EFFICIENCY },
   oil: { label: "Oil boiler", phrase: "an oil boiler", system: "boiler", gbpPerKWh: HEATING_OIL_GBP_PER_LITRE / KEROSENE_KWH_PER_LITRE / BOILER_EFFICIENCY },
   heatPump: { label: "Heat pump (COP 3)", phrase: "a heat pump (COP 3)", system: "heat pump", gbpPerKWh: ELECTRICITY_GBP_PER_KWH / 3 },
-  electric: { label: "Direct electric heating", phrase: "direct electric heating", system: "electric heaters", gbpPerKWh: ELECTRICITY_GBP_PER_KWH },
+  electric: { label: "Direct electric heating", phrase: "direct electric heating", system: "electric heating", gbpPerKWh: ELECTRICITY_GBP_PER_KWH },
 } as const;
 export type HeatSource = keyof typeof HEAT_SOURCES;
 /** Heat displaced, £/kWh-thermal (gas-ish) — the default. */

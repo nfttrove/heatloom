@@ -38,9 +38,13 @@ const SOURCE = (
   ).join("\n") as string
 )
   .replace(/\{\s*['"`]\s*['"`]\s*\}/g, " ")
-  .replace(/<\/?(?:em|strong|b|i|span|a|sub|sup|code)(?:\s[^>]*)?>/g, "")
+  .replace(/<\/?[a-z][a-z0-9]*(?:\s[^>]*)?\/?>/g, "")
   .replace(/\s+/g, " ");
 
+// Known limit: phrase matching cannot tell an honest "no field test yet"
+// from a false "UK Field Test Results", so these are the retired sentences'
+// distinctive wording, not every way to say them again. New copy still needs
+// a human (or reviewer) read against the model.
 describe("claims the evidence does not support stay off the page", () => {
   // Each of these was on the live site before the 2026-09 honesty sweep.
   const RETIRED = [
