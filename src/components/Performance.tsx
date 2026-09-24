@@ -2,6 +2,7 @@ import { TrendingUp, MapPin, Calendar, Target, BarChart3, Battery, Thermometer, 
 import {
   rigOutput,
   storeHeatLoss,
+  RIG_STORE_U_W_PER_M2K,
   COLLECTOR_EFFICIENCY,
   COLLECTOR_EFFICIENCY_RANGE,
   ORC_EFFICIENCY,
@@ -16,7 +17,7 @@ import {
 const SPAIN = { areaM2: 10, dni: 6 };
 const SPAIN_RIG = rigOutput(SPAIN.areaM2, SPAIN.dni);
 // A store holding one day of that collection, at the rig's temperatures.
-const SPAIN_STORE = storeHeatLoss(SPAIN_RIG.thermalKWhPerDay, RIG_STORE_DELTA_T_K);
+const SPAIN_STORE = storeHeatLoss(SPAIN_RIG.thermalKWhPerDay, RIG_STORE_DELTA_T_K, RIG_STORE_U_W_PER_M2K);
 const OVERNIGHT_H = 12;
 const one = (x: number) => x.toFixed(1);
 
@@ -163,7 +164,7 @@ export default function Performance() {
               <h4 className="font-bold text-blue-800 mb-4 text-lg">Hold Test</h4>
               <p className="text-gray-700 leading-relaxed">
                 Log the overnight cooling and fit the store's time constant. The model predicts about{' '}
-                {one(SPAIN_STORE.timeConstantDays)} days for a one-day store behind 150 mm of mineral wool — about{' '}
+                {one(SPAIN_STORE.timeConstantDays)} days for a one-day store behind 150 mm of mineral wool (which insulates about half as well at 250–420 °C) — about{' '}
                 {Math.round(100 * (1 - Math.exp(-OVERNIGHT_H / 24 / SPAIN_STORE.timeConstantDays)))}% of its heat lost over {OVERNIGHT_H} hours.
               </p>
             </div>

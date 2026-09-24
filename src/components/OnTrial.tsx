@@ -5,12 +5,13 @@ import {
   rigOutput,
   COLLECTOR_EFFICIENCY,
   COLLECTOR_EFFICIENCY_RANGE,
+  HYBRID_COLLECTOR_EFFICIENCY,
   DEFAULT_HYBRID,
   REGISTERED_HYBRID_KWH_PER_YEAR,
   formatGBP,
 } from '../utils/heatloom';
 
-// The Medium Pilot claim as the model computes it: mean electric watts and its band.
+// The Medium Pilot claim as today's model computes it: mean electric watts and its band.
 const PILOT = rigOutput(20, 5);
 const PILOT_W = (PILOT.electricKWhPerDay / 24) * 1000;
 const PILOT_LOW_W = (PILOT.pessimisticElectricKWhPerDay / 24) * 1000;
@@ -19,9 +20,11 @@ const REGISTERED = Number(REGISTERED_HYBRID_KWH_PER_YEAR);
 const NOW = hybridProductionKWhPerYear();
 const PLAN = hybridPlan(DEFAULT_HYBRID);
 const kwh = (x: number) => Math.round(x).toLocaleString('en-GB');
+const HYBRID_TODAY = `Today's model: ${kwh(NOW)} kWh/yr (${Math.round((100 * (NOW - REGISTERED)) / REGISTERED)}%), a ${formatGBP(PLAN.economics.systemCostGBP)} system saving ${formatGBP(PLAN.economics.annualSavingsGBP)} a year, a ${PLAN.economics.paybackYears.toFixed(1)}-year payback.`;
 
-// As filed. The descriptions are history and stay as written; only the title
-// and one value of each claim are inside its hash.
+// As filed: value and verdict are history and stay exactly as written. Only
+// the title, the claim type and one value of each claim are inside its hash.
+// Anything computed lives in `today`, clearly labelled.
 const CLAIMS = [
   {
     title: 'Heat Loom Hybrid rev B (sourced 2026 prices, UK)',
@@ -29,15 +32,18 @@ const CLAIMS = [
     committed: `"${REGISTERED_HYBRID_KWH_PER_YEAR}"`,
     hash: '1eec59b9…ec8d80',
     verdict:
-      'As filed: same energy prediction as rev A — the audit changed costs, not physics: real panel/inverter prices (£550/kWp not £400) and the previously-forgotten pump station and controller (£500) raised the starter rig from £2,300 to £3,100 and payback from 3.7 to 5.0 years. Rev A stands below, unedited: that is what pre-registration is for.',
+      'Same energy prediction as rev A — the audit changed costs, not physics: real panel/inverter prices (£550/kWp not £400) and the previously-forgotten pump station and controller (£500) raised the starter rig from £2,300 to £3,100 and payback from 3.7 to 5.0 years. Rev A stands below, unedited: that is what pre-registration is for.',
+    today: HYBRID_TODAY,
     status: 'Revised claim — superseding rev A, filed after a web-sourced cost audit',
   },
   {
     title: 'Heat Loom Medium Pilot (20 m², DNI 5)',
-    value: `≈ ${Math.round(PILOT_W)} W mean electric (model band ${Math.round(PILOT_LOW_W)}–${Math.round(PILOT_W)} W)`,
+    value: '450.77 W mean electric',
     committed: '"450.775"',
     hash: '22c8b908…c4b30d3',
-    verdict: `As filed: solar-thermal, books balance — ${(COLLECTOR_EFFICIENCY * 0.18 * 100).toFixed(1)}% of incident sunlight end-to-end (loss chain ${COLLECTOR_EFFICIENCY.toFixed(3)} × ORC 0.18); no conservation anomaly. The low end of the band uses ${COLLECTOR_EFFICIENCY_RANGE.low} efficiency and −10% sun.`,
+    verdict:
+      'Solar-thermal, books balance: 10.8% of incident sunlight end-to-end (loss chain 0.601 × ORC 0.18); no conservation anomaly.',
+    today: `Today's model: ≈ ${Math.round(PILOT_W)} W, ${Math.round(PILOT_LOW_W)} W in the pessimistic case (${COLLECTOR_EFFICIENCY_RANGE.low} efficiency, −10% sun). The trough chain is ${COLLECTOR_EFFICIENCY.toFixed(3)}, unchanged.`,
     status: 'Concept ceiling — pre-registered before hardware',
   },
   {
@@ -46,7 +52,8 @@ const CLAIMS = [
     committed: `"${REGISTERED_HYBRID_KWH_PER_YEAR}"`,
     hash: 'cacf361a…57ed364',
     verdict:
-      'As filed: £2,300 of parts, £621/yr saved, 3.7-year payback — with December coverage honestly stated at 14% electric / 8% heat.',
+      '£2,300 of parts, £621/yr saved, 3.7-year payback — with December coverage honestly stated at 14% electric / 8% heat.',
+    today: HYBRID_TODAY,
     status: 'The buildable version — pre-registered before hardware',
   },
 ];
@@ -77,8 +84,9 @@ export default function OnTrial() {
               <p className="text-gray-200 leading-relaxed">
                 For the same default Hybrid the model now predicts {kwh(NOW)} kWh/yr of production —{' '}
                 {Math.round((100 * (REGISTERED - NOW)) / REGISTERED)}% below the registered {kwh(REGISTERED)} — because the
-                evacuated tubes no longer borrow the mirror troughs' loss chain and direct-sunlight input. Savings fell
-                further: with half the PV used at home, monthly caps and heat valued at gas, the starter saves about{' '}
+                evacuated tubes no longer borrow the mirror troughs' loss chain ({COLLECTOR_EFFICIENCY.toFixed(3)} →{' '}
+                {HYBRID_COLLECTOR_EFFICIENCY.toFixed(3)}). Savings changed too: counting half the PV as used at home, monthly
+                caps and heat valued at gas, at Ofgem's October–December 2026 prices, the starter saves about{' '}
                 {formatGBP(PLAN.economics.annualSavingsGBP)} a year, a {PLAN.economics.paybackYears.toFixed(1)}-year payback.
                 Rev A and rev B stand unedited below; a rev C with the corrected prediction has not been filed yet.
               </p>
@@ -96,7 +104,10 @@ export default function OnTrial() {
                   <p className="text-orange-300 font-mono text-sm mt-1">{c.value}</p>
                 </div>
               </div>
-              <p className="text-gray-300 leading-relaxed text-sm mb-5">{c.verdict}</p>
+              <p className="text-gray-300 leading-relaxed text-sm mb-3">
+                <span className="text-gray-400">As filed:</span> {c.verdict}
+              </p>
+              <p className="text-emerald-300/90 leading-relaxed text-sm mb-5">{c.today}</p>
               <div className="bg-black/30 rounded-xl px-4 py-3 mb-4">
                 <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">SHA-256 commitment · value committed {c.committed}</div>
                 <div className="font-mono text-xs text-emerald-400 break-all">{c.hash}</div>
@@ -118,9 +129,16 @@ export default function OnTrial() {
                 coverage in the descriptions are not inside any hash.
               </p>
               <p>
-                Timestamps on filings made before In Fini began stamping them server-side (September 2026) are as the filing
-                client sent them, so they show order rather than prove a date. A fair comparison with a built rig will also
-                need a stated measurement protocol and weather normalisation, which we have not yet written.
+                Timestamps on filings made before In Fini began stamping them server-side (September 2026) were set by the
+                filing client, so they prove neither the date nor the order of filing. In Fini is our own project too: its
+                registry stores each hash beside the text it hashes, and the owner's own database access is exempt from the
+                server stamping. On their own, these hashes prove little about when a claim was made. The nearest thing to
+                an independent record is this site's public GitHub history, where the hashes appear from August 2026 —
+                though commit dates, too, are set by whoever commits.
+              </p>
+              <p>
+                A fair comparison with a built rig will also need a stated measurement protocol and weather normalisation,
+                which we have not yet written.
               </p>
             </div>
           </div>

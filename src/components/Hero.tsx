@@ -9,6 +9,7 @@ import {
   REGISTERED_HYBRID_KWH_PER_YEAR,
   HYBRID_SAND_KG_PER_KWH,
   HYBRID_WATER_KG_PER_KWH,
+  PV_PANEL_GBP_PER_W,
   formatGBP,
 } from '../utils/heatloom';
 
@@ -44,7 +45,7 @@ export default function Hero() {
           <p className="text-2xl text-gray-700 mb-16 max-w-4xl mx-auto leading-relaxed font-light">
             Solar heat in <span className="font-semibold text-red-600">a store of sand</span> that carries sunny days into the
             evenings and cloudy days after — with <span className="font-semibold text-blue-600">bought solar panels</span> for the electrons,
-            because no garage machine beats ~£0.30/W silicon. Every number below is modelled; nothing has been built yet.
+            because no garage machine beats ~£{PV_PANEL_GBP_PER_W.toFixed(2)}/W silicon. Every number below is modelled; nothing has been built yet.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-6 justify-center mb-20">
@@ -66,13 +67,13 @@ export default function Hero() {
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Heat, Stored for Days</h3>
             <p className="text-gray-600 leading-relaxed text-lg">
-              A sand store costs about {formatGBP(STORE_GBP_PER_KWH)} per kWh of heat against ~{formatGBP(LITHIUM_GBP_PER_KWH)} per kWh for
+              A sand store's parts cost from about {formatGBP(STORE_GBP_PER_KWH)} per kWh of heat against ~{formatGBP(LITHIUM_GBP_PER_KWH)} per kWh for
               lithium — though a kWh of heat is worth far less than a kWh of electricity. Sand itself doesn't burn or wear out; the hot loop
               around it can (see Safety). The default {DEFAULT_HYBRID.storeKWh} kWh store is {kwh(PLAN.thermal.sandMassKg)} kg of sand, about{' '}
-              {DEC_HEAT_DAYS.toFixed(1)} days of December heating, and loses half its heat in ~{PLAN.thermal.storeHalfLifeDays.toFixed(0)} days.
+              {DEC_HEAT_DAYS.toFixed(1)} days of December heating, and a full store loses half its useful heat in ~{PLAN.thermal.storeHalfLifeDays.toFixed(0)} days.
             </p>
             <div className="mt-6 pt-6 border-t border-red-100">
-              <div className="text-red-600 font-bold text-sm">{Math.round(LITHIUM_GBP_PER_KWH / STORE_GBP_PER_KWH)}× Cheaper per kWh Than Lithium (heat, not electricity)</div>
+              <div className="text-red-600 font-bold text-sm">Up to {Math.round(LITHIUM_GBP_PER_KWH / STORE_GBP_PER_KWH)}× Cheaper per kWh Than Lithium (heat, not electricity)</div>
             </div>
           </div>
 
@@ -92,7 +93,7 @@ export default function Hero() {
               <ShieldCheck className="w-8 h-8 text-white" />
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Numbers on Trial</h3>
-            <p className="text-gray-600 leading-relaxed text-lg">Every performance and cost figure on this site comes from a tested, open-source engineering module, and our production claims are pre-registered in a public registry before any hardware exists — the corrected model already predicts less than we registered.</p>
+            <p className="text-gray-600 leading-relaxed text-lg">Every modelled figure on this site comes from a tested, open-source engineering module (reference prices and engine efficiencies are quoted as such), and our production claims are pre-registered in a public registry before any hardware exists — the corrected model already predicts less than we registered.</p>
             <div className="mt-6 pt-6 border-t border-emerald-100">
               <div className="text-emerald-600 font-bold text-sm">Pre-Registered, Hash-Committed Claims</div>
             </div>

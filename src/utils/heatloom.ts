@@ -66,7 +66,31 @@ export const HYBRID_COLLECTOR_EFFICIENCY: number = chainProduct(HYBRID_LOSS_CHAI
 export const HYBRID_EFFICIENCY_RANGE = { low: 0.3, high: 0.45 } as const;
 
 export const ORC_EFFICIENCY = 0.18;
-export const ELECTRICITY_GBP_PER_KWH = 0.28;
+
+/**
+ * Ofgem price cap, 1 October – 31 December 2026, Direct Debit: electricity
+ * 26.32p/kWh (0% VAT that quarter), gas 7.97p/kWh (including 5% VAT).
+ * Source: ofgem.gov.uk/news/changes-energy-price-cap-between-1-october-and-
+ * 31-december-2026. The cap moves quarterly. The registered claims (On
+ * Trial) were filed with the older 28p and 4.5p.
+ */
+export const ELECTRICITY_GBP_PER_KWH = 0.2632;
+export const GAS_GBP_PER_KWH = 0.0797;
+/** Condensing boiler, seasonal efficiency — an assumption (85–90% is typical). */
+export const BOILER_EFFICIENCY = 0.9;
+/**
+ * Kerosene, 1,000-litre orders: September 2026 average 88.5p/L ex VAT
+ * (PriceTank UK heating oil guide), 92.9p with 5% VAT; about 10.35 kWh per
+ * litre. Volatile: the 24 September spot price was 115p including VAT.
+ */
+export const HEATING_OIL_GBP_PER_LITRE = 0.929;
+export const KEROSENE_KWH_PER_LITRE = 10.35;
+/**
+ * Bought silicon, for comparison: tier-1 400 W panels at £100–130 (Aug 2026,
+ * pluggedin.solar 400 W UK guide) ≈ £0.25–0.33/W, rated about 21–23%.
+ */
+export const PV_PANEL_GBP_PER_W = 0.3;
+export const PV_MODULE_EFFICIENCY = 0.22;
 
 // ---------------------------------------------------------------------------
 // Sand: how much it takes depends on how hot the store runs
@@ -109,6 +133,13 @@ export const HYBRID_WATER_KG_PER_KWH = 3600 / (WATER_CP_KJ_PER_KG_K * (95 - HYBR
  * and exchanger are ignored, which slightly flatters the store.
  */
 export const STORE_U_W_PER_M2K = 0.25;
+/**
+ * The same 150 mm of mineral wool around the research rig's 250–420 °C
+ * store: its conductivity roughly doubles at those temperatures.
+ */
+export const RIG_STORE_U_W_PER_M2K = 0.5;
+/** Where a store sits: UK annual mean outdoor or garage temperature (assumption). */
+export const STORE_AMBIENT_C = 10;
 
 /** Volume and outside area of the cylinder (height = diameter) holding `massKg` of sand. */
 export function sandStoreGeometry(massKg: number): { volumeM3: number; areaM2: number } {
@@ -129,6 +160,21 @@ export function storeHeatLoss(
   const tauS = cJPerK / (uWPerM2K * areaM2);
   const timeConstantDays = tauS / 86400;
   return { massKg, volumeM3, areaM2, timeConstantDays, halfLifeDays: timeConstantDays * Math.LN2 };
+}
+
+/**
+ * Days until a full store has lost half its *useful* heat — the heat above
+ * floorC. Sooner than halfLifeDays (the half-life of the temperature above
+ * ambient), because heat below the floor keeps leaking but is no use.
+ */
+export function usefulHeatHalfLifeDays(
+  timeConstantDays: number,
+  topC: number = HYBRID_STORE_TOP_C,
+  floorC: number = HYBRID_STORE_USEFUL_MIN_C,
+  ambientC: number = STORE_AMBIENT_C
+): number {
+  const x = (0.5 * (topC - floorC) + (floorC - ambientC)) / (topC - ambientC);
+  return -timeConstantDays * Math.log(x);
 }
 
 // ---------------------------------------------------------------------------
@@ -164,7 +210,12 @@ export const HEAT_DEMAND_MONTHLY = (() => {
   return hddNorm.map((h) => HOT_WATER_SHARE + (1 - HOT_WATER_SHARE) * h);
 })();
 
-/** The old two-number shape, kept for the retired rig's December figure. */
+/**
+ * The old two-number shape, kept for the retired rig's December figure.
+ * It is southern England's tilted-panel shape; direct beam (what troughs
+ * use) falls further in a UK winter, so the rig's UK December is optimistic,
+ * and a sunnier site's winter dip is shallower than this.
+ */
 export const SEASONAL = { winter: SOLAR_MONTHLY[DECEMBER], summer: Math.max(...SOLAR_MONTHLY) } as const;
 
 // ---------------------------------------------------------------------------
@@ -177,7 +228,7 @@ export const RIG_BOM = [
   { item: "Receiver Tubes", detail: "Evacuated, selective-coated steel/copper", gbp: 1400 },
   { item: "Storage Vessel", detail: "55-gal drum, ceramic fiber liner, mineral wool, VIP panels", gbp: 2000 },
   { item: "Storage Media", detail: "Basalt/magnetite (20%), quartz sand (70%), perlite (10%)", gbp: 650 },
-  { item: "Plumbing", detail: "316 SS (charge loop), Cu or SS (use coil)", gbp: 950 },
+  { item: "Plumbing", detail: "316 SS oil charge loop + external oil-to-water exchanger (priced as the old in-store coil)", gbp: 950 },
   { item: "Controls", detail: "Raspberry Pi/ESP32, K-type thermocouples, actuator drivers", gbp: 400 },
 ] as const;
 export const RIG_BOM_AREA_M2 = 3;
@@ -311,6 +362,8 @@ export function lossBudget(
 export const PV_GBP_PER_KWP = 550;
 /** Specific yield, kWh per kWp per year: southern England, south-facing, sensible tilt (Scotland is nearer 800). */
 export const PV_KWH_PER_KWP_YEAR = 950;
+/** The sunshine that yield goes with: southern England, kWh/m²/day on the tilt. PV scales with the sunshine input. */
+export const PV_REFERENCE_SUN_KWH_M2_DAY = 3;
 /**
  * Share of PV output used at home. Without a battery, a house is out or
  * asleep for much of the sunshine; 50% is a typical planning figure.
@@ -352,15 +405,14 @@ export const LITHIUM_GBP_PER_KWH = 300;
 
 /**
  * What a displaced kWh of heat is worth depends on what heats the house
- * now. Approximate 2026 UK figures, stated as assumptions: gas through a
- * boiler (the site's default), heating oil, a heat pump at COP 3, and
- * direct electric at the same 28p as the electricity above.
+ * now: gas or oil through a boiler, a heat pump at COP 3, or direct
+ * electric — all from the sourced prices above.
  */
 export const HEAT_SOURCES = {
-  gas: { label: "Gas boiler", gbpPerKWh: 0.045 },
-  oil: { label: "Heating oil", gbpPerKWh: 0.075 },
-  heatPump: { label: "Heat pump (COP 3)", gbpPerKWh: ELECTRICITY_GBP_PER_KWH / 3 },
-  electric: { label: "Direct electric", gbpPerKWh: ELECTRICITY_GBP_PER_KWH },
+  gas: { label: "Gas boiler", phrase: "a gas boiler", gbpPerKWh: GAS_GBP_PER_KWH / BOILER_EFFICIENCY },
+  oil: { label: "Oil boiler", phrase: "an oil boiler", gbpPerKWh: HEATING_OIL_GBP_PER_LITRE / KEROSENE_KWH_PER_LITRE / BOILER_EFFICIENCY },
+  heatPump: { label: "Heat pump (COP 3)", phrase: "a heat pump (COP 3)", gbpPerKWh: ELECTRICITY_GBP_PER_KWH / 3 },
+  electric: { label: "Direct electric heating", phrase: "direct electric heating", gbpPerKWh: ELECTRICITY_GBP_PER_KWH },
 } as const;
 export type HeatSource = keyof typeof HEAT_SOURCES;
 /** Heat displaced, £/kWh-thermal (gas-ish) — the default. */
@@ -380,7 +432,8 @@ export interface HybridInput {
   /**
    * Annual-average sunshine on the collector, kWh/m²/day — global
    * irradiance on a south-facing tilt (tubes use diffuse light too), not
-   * DNI. Southern England ≈ 3. The field name is historical.
+   * DNI. Southern England ≈ 3. PV output scales with it too. The field
+   * name is historical.
    */
   dniAnnual: number;
   /** Share of PV output used at home, 0–1. Default 0.5. */
@@ -433,6 +486,7 @@ export interface HybridPlan {
     costGBP: number;
     sandMassKg: number;
     storeVolumeM3: number;
+    /** Days for a full store to lose half its useful heat (usefulHeatHalfLifeDays). */
     storeHalfLifeDays: number;
     /** Store capacity ÷ the best month's daily collection. */
     storeDaysOfPeakCollection: number;
@@ -472,8 +526,12 @@ export interface HybridPlan {
   };
 }
 
+function pvAnnualKWh(p: HybridInput): number {
+  return p.pvKwp * PV_KWH_PER_KWP_YEAR * (p.dniAnnual / PV_REFERENCE_SUN_KWH_M2_DAY);
+}
+
 function runScenario(p: HybridInput, sunScale: number, efficiency: number, selfUse: number, heatPrice: number): Scenario {
-  const pvDailyMean = (p.pvKwp * PV_KWH_PER_KWP_YEAR * sunScale) / 365;
+  const pvDailyMean = (pvAnnualKWh(p) * sunScale) / 365;
   const thermalDailyMean = p.dniAnnual * sunScale * p.collectorM2 * efficiency;
   let pvUsed = 0, pvExport = 0, heatUsed = 0;
   const months: MonthRow[] = [];
@@ -486,8 +544,10 @@ function runScenario(p: HybridInput, sunScale: number, efficiency: number, selfU
     const heatDay = thermalDailyMean * SOLAR_MONTHLY[m];
     // The store smooths sunny and cloudy days within a month; it cannot
     // carry summer into winter (see storeHeatLoss), so no month uses
-    // more heat than it collects.
-    const heatUsedDay = Math.min(heatDemandDay, heatDay);
+    // more heat than it collects. The tubes charge the store and the house
+    // draws from it, so a day's heat is also capped at what the store
+    // holds — conservative, since some heat is used while it is collected.
+    const heatUsedDay = Math.min(heatDemandDay, heatDay, Math.max(0, p.storeKWh));
     pvUsed += d * pvUsedDay;
     pvExport += d * (pvDay - pvUsedDay);
     heatUsed += d * heatUsedDay;
@@ -507,7 +567,7 @@ export function hybridPlan(p: HybridInput): HybridPlan {
   const central = runScenario(p, 1, HYBRID_COLLECTOR_EFFICIENCY, selfUse, heatPrice);
   const pessimistic = runScenario(p, 0.9, HYBRID_EFFICIENCY_RANGE.low, selfUse, heatPrice);
 
-  const pvAnnual = p.pvKwp * PV_KWH_PER_KWP_YEAR;
+  const pvAnnual = pvAnnualKWh(p);
   const pvMean = pvAnnual / 365;
   const thermalMean = p.dniAnnual * p.collectorM2 * HYBRID_COLLECTOR_EFFICIENCY;
   const peakThermal = thermalMean * Math.max(...SOLAR_MONTHLY);
@@ -553,7 +613,7 @@ export function hybridPlan(p: HybridInput): HybridPlan {
       costGBP: collectorCost,
       sandMassKg,
       storeVolumeM3: loss.volumeM3,
-      storeHalfLifeDays: loss.halfLifeDays,
+      storeHalfLifeDays: usefulHeatHalfLifeDays(loss.timeConstantDays),
       storeDaysOfPeakCollection: peakThermal > 0 ? p.storeKWh / peakThermal : Infinity,
       waterMassKg: p.storeKWh * HYBRID_WATER_KG_PER_KWH,
       storeCostGBP: storeCost,
@@ -647,7 +707,7 @@ export interface HeatFlowState {
   deliveredKWh: number;
   /** Standing loss from the store to its surroundings. */
   lostKWh: number;
-  /** Collected with the store already full: the controller parks the loop. */
+  /** Arriving with the store full: not stored, and the tubes stagnate (see Safety). */
   dumpedKWh: number;
   unmetKWh: number;
 }
@@ -679,7 +739,7 @@ export function heatFlowStep(s: HeatFlowState, p: HeatFlowParams, dtHours: numbe
   const collected = Math.max(0, p.sunKWPerM2) * Math.max(0, p.areaM2) * HYBRID_COLLECT_EFFICIENCY * dtHours;
   const tauHours = capacity > 0 ? storeHeatLoss(capacity).timeConstantDays * 24 : Infinity;
   const kWhPerK = capacity / HYBRID_STORE_DELTA_T_K;
-  const aboveAmbient = hybridStoreTemperatureC(s.storedKWh, capacity) - (p.ambientC ?? 10);
+  const aboveAmbient = hybridStoreTemperatureC(s.storedKWh, capacity) - (p.ambientC ?? STORE_AMBIENT_C);
   const lost = Math.min(s.storedKWh + collected, Math.max(0, (kWhPerK * aboveAmbient * dtHours) / tauHours));
   const available = s.storedKWh + collected - lost;
   const wanted = Math.max(0, p.demandKW) * dtHours;
@@ -699,10 +759,11 @@ export function heatFlowStep(s: HeatFlowState, p: HeatFlowParams, dtHours: numbe
 
 /**
  * The research rig's store conductance, W/K: the same insulated cylinder
- * as storeHeatLoss, holding `massKg` of sand. The Demo uses it so its
- * overnight loss agrees with the hold test in Performance.
+ * as storeHeatLoss, holding `massKg` of sand, with the rig's hot-insulation
+ * U. The Demo uses it so its overnight loss agrees with the hold test in
+ * Performance.
  */
-export function sandStoreUAWPerK(massKg: number, uWPerM2K: number = STORE_U_W_PER_M2K): number {
+export function sandStoreUAWPerK(massKg: number, uWPerM2K: number = RIG_STORE_U_W_PER_M2K): number {
   return uWPerM2K * sandStoreGeometry(massKg).areaM2;
 }
 

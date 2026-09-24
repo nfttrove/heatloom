@@ -1,5 +1,5 @@
 import { PoundSterling, TrendingUp, Calculator, Clock } from 'lucide-react';
-import { hybridPlan, DEFAULT_HYBRID, ELECTRICITY_GBP_PER_KWH, HEAT_SOURCES, formatGBP } from '../utils/heatloom';
+import { hybridPlan, DEFAULT_HYBRID, ELECTRICITY_GBP_PER_KWH, HEAT_SOURCES, LITHIUM_GBP_PER_KWH, formatGBP } from '../utils/heatloom';
 
 const PLAN = hybridPlan(DEFAULT_HYBRID);
 const E = PLAN.economics;
@@ -7,19 +7,22 @@ const ALL_SELF_USED = hybridPlan({ ...DEFAULT_HYBRID, pvSelfUse: 1 });
 const VS_HEAT_PUMP = hybridPlan({ ...DEFAULT_HYBRID, heatSource: 'heatPump' });
 const VS_ELECTRIC = hybridPlan({ ...DEFAULT_HYBRID, heatSource: 'electric' });
 const BIG_STORE = hybridPlan({ ...DEFAULT_HYBRID, storeKWh: DEFAULT_HYBRID.storeKWh * 2 });
+// A home battery to soak up the surplus PV: an illustration, priced at the module's lithium figure.
+const BATTERY_KWH = 5;
+const BATTERY_GBP = BATTERY_KWH * LITHIUM_GBP_PER_KWH;
+const WITH_BATTERY_PAYBACK = (ALL_SELF_USED.economics.systemCostGBP + BATTERY_GBP) / ALL_SELF_USED.economics.annualSavingsGBP;
 const kwh = (x: number) => Math.round(x).toLocaleString('en-GB');
 const pence = (x: number) => `${(x * 100).toFixed(1)}p`;
-const lowerFirst = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
 
 export default function ROI() {
   return (
-    <section className="py-20 bg-white">
+    <section id="roi" className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-900 mb-6">Return on Investment</h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Modelled economics for the default Hybrid against a gas boiler — computed by the same tested module as every
-            other number on this site. Nothing has been built and measured yet.
+            Modelled economics for the default Hybrid against a gas boiler, at Ofgem's October–December 2026 cap prices —
+            computed by the same tested module as the rest of the site. Nothing has been built and measured yet.
           </p>
         </div>
 
@@ -88,8 +91,8 @@ export default function ROI() {
                   <h4 className="text-lg font-bold">What moves the payback</h4>
                 </div>
                 <ul className="space-y-2 text-sm">
-                  <li>• Using all the PV at home (a battery, or daytime loads): {ALL_SELF_USED.economics.paybackYears.toFixed(1)} years</li>
-                  <li>• If the heat displaces a {lowerFirst(HEAT_SOURCES.heatPump.label)} rather than gas: {VS_HEAT_PUMP.economics.paybackYears.toFixed(1)} years; direct electric heating: {VS_ELECTRIC.economics.paybackYears.toFixed(1)} years</li>
+                  <li>• Using all the PV at home: {ALL_SELF_USED.economics.paybackYears.toFixed(1)} years if daytime loads can absorb it; with a {BATTERY_KWH} kWh battery ({formatGBP(BATTERY_GBP)}) at best {WITH_BATTERY_PAYBACK.toFixed(1)} years</li>
+                  <li>• If the heat displaces {HEAT_SOURCES.heatPump.phrase} rather than gas: {VS_HEAT_PUMP.economics.paybackYears.toFixed(1)} years; direct electric heating: {VS_ELECTRIC.economics.paybackYears.toFixed(1)} years</li>
                   <li>• A bigger sand store: doubling it raises the cost to {formatGBP(BIG_STORE.economics.systemCostGBP)} and changes coverage not at all — it carries days, not seasons</li>
                   <li>• Field data: once builders file measurements, they replace these predictions</li>
                 </ul>

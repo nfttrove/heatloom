@@ -29,6 +29,15 @@ import {
   hybridPlan,
   hybridProductionKWhPerYear,
   formatGBP,
+  usefulHeatHalfLifeDays,
+  ELECTRICITY_GBP_PER_KWH,
+  HEAT_SOURCES,
+  GAS_GBP_PER_KWH,
+  BOILER_EFFICIENCY,
+  STORE_U_W_PER_M2K,
+  RIG_STORE_U_W_PER_M2K,
+  PV_KWH_PER_KWP_YEAR,
+  HYBRID_EFFICIENCY_RANGE,
   HEAT_FLOW_START,
   heatFlowStep,
   hybridStoreTemperatureC,
@@ -80,19 +89,39 @@ describe("stated assumptions are internally consistent", () => {
 });
 
 describe("the store holds days, not seasons", () => {
-  it("a 40 kWh Hybrid store loses half its heat within about two weeks", () => {
+  it("a 40 kWh Hybrid store: cylinder geometry, time constant and half-lives, pinned", () => {
     const l = storeHeatLoss(40);
     expect(l.massKg).toBeCloseTo(2400, 6);
-    expect(l.halfLifeDays).toBeGreaterThan(3);
-    expect(l.halfLifeDays).toBeLessThan(15);
+    expect(l.volumeM3).toBeCloseTo(1.5, 12);
+    // h = d: V = 2πr³, area = 2πr² (ends) + 2πr·2r (side) = 6πr²
+    const r = Math.cbrt(1.5 / (2 * Math.PI));
+    expect(l.areaM2).toBeCloseTo(6 * Math.PI * r * r, 12);
+    expect(l.areaM2).toBeCloseTo(7.254, 3);
+    // τ = C / UA = 2400 kg × 800 J/kg·K / (0.25 W/m²K × area)
+    expect(l.timeConstantDays).toBeCloseTo((2400 * 800) / (0.25 * l.areaM2) / 86400, 12);
+    expect(l.timeConstantDays).toBeCloseTo(12.25, 2);
+    expect(l.halfLifeDays).toBeCloseTo(l.timeConstantDays * Math.LN2, 12);
+    // Useful heat (above 45 °C, from 120 °C, 10 °C around it) halves sooner.
+    const useful = usefulHeatHalfLifeDays(l.timeConstantDays);
+    expect(useful).toBeCloseTo(-l.timeConstantDays * Math.log((37.5 + 35) / 110), 12);
+    expect(useful).toBeCloseTo(5.11, 2);
+    expect(hybridPlan(DEFAULT_HYBRID).thermal.storeHalfLifeDays).toBe(useful);
     // After three months, essentially nothing is left.
     expect(Math.exp(-90 / l.timeConstantDays)).toBeLessThan(0.01);
   });
 
+  it("the useful half-life is what the flow toy's store actually does", () => {
+    const tauH = storeHeatLoss(40).timeConstantDays * 24;
+    let s = { ...HEAT_FLOW_START, storedKWh: 40 };
+    const dt = 0.01;
+    while (s.storedKWh > 20) s = heatFlowStep(s, { sunKWPerM2: 0, areaM2: 3, demandKW: 0, capacityKWh: 40 }, dt);
+    expect(s.hours / 24).toBeCloseTo(usefulHeatHalfLifeDays(tauH / 24), 1);
+  });
+
   it("is not 'the only battery cheaper than the energy it stores'", () => {
-    // Capacity cost ÷ the value of one charge of heat: one cycle a year
-    // (seasonal) would take centuries to repay the store.
-    expect(STORE_GBP_PER_KWH / HEAT_GBP_PER_KWH).toBeGreaterThan(300);
+    // Capacity cost ÷ the value of one charge of heat: at one cycle a year
+    // (seasonal) the store would take over a century to repay.
+    expect(STORE_GBP_PER_KWH / HEAT_GBP_PER_KWH).toBeGreaterThan(100);
     expect(LITHIUM_GBP_PER_KWH / STORE_GBP_PER_KWH).toBeCloseTo(20, 6);
   });
 });
@@ -144,14 +173,14 @@ describe("honest rig economics", () => {
     const s = annualSavingsGBP(8, rig);
     const expected = SOLAR_MONTHLY.reduce(
       (sum, f, m) => sum + DAYS_IN_MONTH[m] * Math.min(8, rig.electricKWhPerDay * f), 0
-    ) * 0.28;
+    ) * ELECTRICITY_GBP_PER_KWH;
     expect(s).toBeCloseTo(expected, 6);
-    expect(s).toBeLessThan(8 * 365 * 0.28);
+    expect(s).toBeLessThan(8 * 365 * ELECTRICITY_GBP_PER_KWH);
   });
 
   it("full coverage equals the naive number", () => {
     const tiny = rigOutput(10, 5);
-    expect(annualSavingsGBP(0.5, tiny)).toBeCloseTo(365 * 0.5 * 0.28, 6);
+    expect(annualSavingsGBP(0.5, tiny)).toBeCloseTo(365 * 0.5 * ELECTRICITY_GBP_PER_KWH, 6);
   });
 });
 
@@ -217,9 +246,13 @@ describe("hybridPlan", () => {
     const all = hybridPlan({ ...DEFAULT_HYBRID, pvSelfUse: 1 });
     expect(all.economics.annualSavingsGBP).toBeGreaterThan(plan.economics.annualSavingsGBP);
     const electricHeat = hybridPlan({ ...DEFAULT_HYBRID, heatSource: "electric" });
-    expect(electricHeat.economics.heatSavingsGBP).toBeCloseTo(plan.economics.heatSavingsGBP * (0.28 / 0.045), 6);
-    // Against gas, PV earns most of the money.
-    expect(plan.economics.electricSavingsGBP).toBeGreaterThan(3 * plan.economics.heatSavingsGBP);
+    expect(electricHeat.economics.heatSavingsGBP).toBeCloseTo(
+      plan.economics.heatSavingsGBP * (ELECTRICITY_GBP_PER_KWH / HEAT_SOURCES.gas.gbpPerKWh), 6);
+    // Against gas, PV earns most of the money, and the heat half pays back
+    // several times more slowly than the panels.
+    const e = plan.economics;
+    expect(e.electricSavingsGBP).toBeGreaterThan(e.heatSavingsGBP);
+    expect(e.thermalCostGBP / e.heatSavingsGBP).toBeGreaterThan(3 * (e.pvCostGBP / e.electricSavingsGBP));
   });
 
   it("UK winter triggers the serious December verdict", () => {
@@ -345,9 +378,53 @@ describe("rig demo (the retired design's day)", () => {
 
   it("overnight loss agrees with the hold test's time constant", () => {
     const kg = 1500;
-    const tauDays = storeHeatLoss(kg / 11.25, RIG_STORE_DELTA_T_K).timeConstantDays;
+    const tauDays = storeHeatLoss(kg / 11.25, RIG_STORE_DELTA_T_K, RIG_STORE_U_W_PER_M2K).timeConstantDays;
     const after = rigStoreAfterC(320, kg, 20, 10);
     expect(after).toBeCloseTo(20 + 300 * Math.exp(-10 / 24 / tauDays), 9);
-    expect(sandStoreUAWPerK(kg)).toBeLessThan(2); // about 1.3 W/K, not the old hard-coded 18
+    // Hot mineral wool conducts about twice as well as cold: U 0.5, not 0.25.
+    expect(sandStoreUAWPerK(kg)).toBeCloseTo(2 * sandStoreUAWPerK(kg, STORE_U_W_PER_M2K), 12);
+    expect(sandStoreUAWPerK(kg)).toBeLessThan(3); // about 2.7 W/K, not the old hard-coded 18
+  });
+});
+
+describe("review round: pinned behaviour", () => {
+  // Large demand so every collected or generated kWh is used: savings are then
+  // proportional to output, and the scenarios can be compared exactly.
+  const hungry = { ...DEFAULT_HYBRID, electricKWhPerDay: 1000, heatKWhPerDay: 10000 };
+
+  it("the pessimistic case is −10% sun and the low tube efficiency, exactly", () => {
+    const heatOnly = hybridPlan({ ...hungry, pvKwp: 0 }).economics;
+    expect(heatOnly.pessimisticSavingsGBP / heatOnly.annualSavingsGBP).toBeCloseTo(
+      (0.9 * HYBRID_EFFICIENCY_RANGE.low) / HYBRID_COLLECTOR_EFFICIENCY, 9);
+    const pvOnly = hybridPlan({ ...hungry, collectorM2: 0 }).economics;
+    expect(pvOnly.pessimisticSavingsGBP / pvOnly.annualSavingsGBP).toBeCloseTo(0.9, 9);
+  });
+
+  it("PV output follows the sunshine input", () => {
+    expect(hybridPlan(DEFAULT_HYBRID).pv.annualKWh).toBeCloseTo(2 * PV_KWH_PER_KWP_YEAR, 9);
+    expect(hybridPlan({ ...DEFAULT_HYBRID, dniAnnual: 1.5 }).pv.annualKWh).toBeCloseTo(PV_KWH_PER_KWP_YEAR, 9);
+  });
+
+  it("a store smaller than a day's collection limits heat used; beyond that, size adds nothing", () => {
+    const base = { ...DEFAULT_HYBRID, collectorM2: 40, heatKWhPerDay: 100 };
+    const tiny = hybridPlan({ ...base, storeKWh: 10 });
+    const ample = hybridPlan({ ...base, storeKWh: 150 });
+    const huge = hybridPlan({ ...base, storeKWh: 300 });
+    expect(tiny.thermal.storeDaysOfPeakCollection).toBeLessThan(1);
+    expect(tiny.thermal.usedKWh).toBeLessThan(ample.thermal.usedKWh);
+    expect(huge.thermal.usedKWh).toBe(ample.thermal.usedKWh);
+    for (const m of tiny.monthly) expect(m.heatUsedKWhPerDay).toBeLessThanOrEqual(10 + 1e-9);
+  });
+
+  it("heat prices come from the sourced fuel prices", () => {
+    expect(HEAT_SOURCES.gas.gbpPerKWh).toBeCloseTo(GAS_GBP_PER_KWH / BOILER_EFFICIENCY, 12);
+    expect(HEAT_SOURCES.heatPump.gbpPerKWh).toBeCloseTo(ELECTRICITY_GBP_PER_KWH / 3, 12);
+    expect(HEAT_SOURCES.electric.gbpPerKWh).toBe(ELECTRICITY_GBP_PER_KWH);
+    expect(HEAT_GBP_PER_KWH).toBe(HEAT_SOURCES.gas.gbpPerKWh);
+  });
+
+  it("the filed Medium Pilot value still matches the model (if this fails, file a revision; don't edit the claim)", () => {
+    const pilot = rigOutput(20, 5);
+    expect(((pilot.electricKWhPerDay / 24) * 1000).toFixed(3)).toBe("450.775");
   });
 });

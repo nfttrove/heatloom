@@ -42,11 +42,45 @@ const fresh = (): SimState => ({
   series: [],
 });
 
-/** Parse a number input; keep the old value when the box is empty or nonsense. */
-const num = (raw: string, prev: number, lo: number, hi: number) => {
-  const v = parseFloat(raw);
-  return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : prev;
-};
+/**
+ * A number box that lets you type freely: the draft text is kept while
+ * editing, the value updates only when the text parses inside [min, max],
+ * and leaving the box shows the value actually in use.
+ */
+function NumberField(props: {
+  id: string;
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onValue: (v: number) => void;
+  className: string;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <div>
+      <label htmlFor={props.id} className="block text-sm font-medium text-gray-300 mb-2">
+        {props.label}
+      </label>
+      <input
+        id={props.id}
+        type="number"
+        min={props.min}
+        max={props.max}
+        step={props.step}
+        value={draft ?? String(props.value)}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          const v = parseFloat(e.target.value);
+          if (Number.isFinite(v) && v >= props.min && v <= props.max) props.onValue(v);
+        }}
+        onBlur={() => setDraft(null)}
+        className={props.className}
+      />
+    </div>
+  );
+}
 
 export default function Demo() {
   const [params, setParams] = useState<RigDemoParams>({
@@ -202,60 +236,14 @@ export default function Demo() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="demo-dni" className="block text-sm font-medium text-gray-300 mb-2">DNI (kWh/m²·day)</label>
-                  <input
-                    id="demo-dni"
-                    type="number"
-                    min="0"
-                    max="12"
-                    step="0.1"
-                    value={params.dniKWhPerM2Day}
-                    onChange={(e) => setParams((prev) => ({ ...prev, dniKWhPerM2Day: num(e.target.value, prev.dniKWhPerM2Day, 0, 12) }))}
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="demo-area" className="block text-sm font-medium text-gray-300 mb-2">Mirror Area (m²)</label>
-                  <input
-                    id="demo-area"
-                    type="number"
-                    min="1"
-                    max="100"
-                    step="1"
-                    value={params.areaM2}
-                    onChange={(e) => setParams((prev) => ({ ...prev, areaM2: num(e.target.value, prev.areaM2, 1, 100) }))}
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="demo-sand" className="block text-sm font-medium text-gray-300 mb-2">Sand Mass (kg)</label>
-                  <input
-                    id="demo-sand"
-                    type="number"
-                    min="100"
-                    max="20000"
-                    step="100"
-                    value={params.sandKg}
-                    onChange={(e) => setParams((prev) => ({ ...prev, sandKg: num(e.target.value, prev.sandKg, 100, 20000) }))}
-                    className={inputClass}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="demo-orc" className="block text-sm font-medium text-gray-300 mb-2">
-                    ORC Efficiency (max {ORC_MAX})
-                  </label>
-                  <input
-                    id="demo-orc"
-                    type="number"
-                    min="0"
-                    max={ORC_MAX}
-                    step="0.01"
-                    value={params.orcEfficiency}
-                    onChange={(e) => setParams((prev) => ({ ...prev, orcEfficiency: num(e.target.value, prev.orcEfficiency, 0, ORC_MAX) }))}
-                    className={inputClass}
-                  />
-                </div>
+                <NumberField id="demo-dni" label="DNI (kWh/m²·day)" value={params.dniKWhPerM2Day} min={0} max={12} step={0.1}
+                  onValue={(v) => setParams((prev) => ({ ...prev, dniKWhPerM2Day: v }))} className={inputClass} />
+                <NumberField id="demo-area" label="Mirror Area (m²)" value={params.areaM2} min={1} max={100} step={1}
+                  onValue={(v) => setParams((prev) => ({ ...prev, areaM2: v }))} className={inputClass} />
+                <NumberField id="demo-sand" label="Sand Mass (kg)" value={params.sandKg} min={100} max={20000} step={100}
+                  onValue={(v) => setParams((prev) => ({ ...prev, sandKg: v }))} className={inputClass} />
+                <NumberField id="demo-orc" label={`ORC Efficiency (max ${ORC_MAX})`} value={params.orcEfficiency} min={0} max={ORC_MAX} step={0.01}
+                  onValue={(v) => setParams((prev) => ({ ...prev, orcEfficiency: v }))} className={inputClass} />
               </div>
 
               <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-700">
@@ -431,7 +419,7 @@ export default function Demo() {
                 Simplified physics, stated: sunshine follows a sine from 06:00 to 20:00; the troughs collect{' '}
                 {Math.round(RIG_COLLECT_EFFICIENCY * 100)}% of it into the store (the site's {Math.round(COLLECTOR_EFFICIENCY * 100)}%
                 loss chain without its storage stage, because the store's standing loss is simulated here instead, through
-                150 mm of mineral wool); once the store passes {params.dispatchAboveC} °C the ORC takes{' '}
+                150 mm of mineral wool that insulates about half as well at these temperatures); once the store passes {params.dispatchAboveC} °C the ORC takes{' '}
                 {Math.round(params.dispatchFraction * 100)}% of the incoming heat; at {RIG_STORE_TOP_C} °C the troughs defocus.
                 Nothing here has been built and measured.
               </p>

@@ -1,5 +1,13 @@
 import { Ban, Gauge, Repeat, Lightbulb } from 'lucide-react';
-import { COLLECTOR_EFFICIENCY, ORC_EFFICIENCY, ELECTRICITY_GBP_PER_KWH, HEAT_SOURCES } from '../utils/heatloom';
+import {
+  COLLECTOR_EFFICIENCY,
+  ORC_EFFICIENCY,
+  ELECTRICITY_GBP_PER_KWH,
+  HEAT_SOURCES,
+  PV_MODULE_EFFICIENCY,
+  PV_PANEL_GBP_PER_W,
+  formatGBP,
+} from '../utils/heatloom';
 
 // Carnot from 250 °C sand to a 20 °C garden, and what the ORC does with a kWh of heat.
 const T_HOT_K = 250 + 273.15;
@@ -8,6 +16,18 @@ const CARNOT = 1 - T_COLD_K / T_HOT_K;
 const SUN_TO_ELECTRIC = COLLECTOR_EFFICIENCY * ORC_EFFICIENCY;
 const PENCE_VIA_ORC = ORC_EFFICIENCY * ELECTRICITY_GBP_PER_KWH * 100;
 const pct = (x: number) => `${(x * 100).toFixed(x < 0.2 ? 1 : 0)}%`;
+const GAS_P = HEAT_SOURCES.gas.gbpPerKWh * 100;
+const HEAT_PUMP_P = HEAT_SOURCES.heatPump.gbpPerKWh * 100;
+const PANEL_W = 400;
+const ORC_VERDICT = (() => {
+  const vsGas = PENCE_VIA_ORC < GAS_P ? 'less than' : 'more than';
+  const vsPump = PENCE_VIA_ORC < HEAT_PUMP_P ? 'less than' : 'more than';
+  const tail =
+    PENCE_VIA_ORC < Math.min(GAS_P, HEAT_PUMP_P)
+      ? ' At these prices the turbine turns heat into something worth less than the heat itself.'
+      : '';
+  return `${vsGas} the ${GAS_P.toFixed(1)}p that heat is worth as heat against gas, and ${vsPump} the ${HEAT_PUMP_P.toFixed(1)}p against a heat pump.${tail}`;
+})();
 
 const ENGINES = [
   { name: 'Utility steam (600 °C, gigawatts)', eff: '40–45%', verdict: 'magnificent — at scale we will never own', tone: 'text-emerald-600' },
@@ -48,13 +68,14 @@ export default function WhyNoTurbine() {
               <div>collector: {pct(COLLECTOR_EFFICIENCY)} of sunlight → heat</div>
               <div>ORC: {pct(ORC_EFFICIENCY)} of heat → electricity</div>
               <div className="text-red-700 font-bold">= {pct(SUN_TO_ELECTRIC)} sun → electricity</div>
-              <div className="text-blue-700 font-bold">PV alone: ~22% sun → electricity (panel rating)</div>
+              <div className="text-blue-700 font-bold">PV alone: ~{pct(PV_MODULE_EFFICIENCY)} sun → electricity (panel rating)</div>
             </div>
             <p className="text-gray-700 leading-relaxed mt-6">
-              Our turbine made electricity out of sunlight <em>worse than a £120 panel</em>. And each kWh of heat it
-              consumed became about {PENCE_VIA_ORC.toFixed(1)}p of electricity — barely more than the{' '}
-              {(HEAT_SOURCES.gas.gbpPerKWh * 100).toFixed(1)}p that heat is worth against gas, and much less than the{' '}
-              {(HEAT_SOURCES.heatPump.gbpPerKWh * 100).toFixed(1)}p it is worth against a heat pump.
+              Our turbine made electricity out of sunlight{' '}
+              <em>worse than a {formatGBP(PANEL_W * PV_PANEL_GBP_PER_W)}, {PANEL_W} W panel</em>. And each kWh of heat it
+              consumed became about {PENCE_VIA_ORC.toFixed(1)}p of electricity (at{' '}
+              {(ELECTRICITY_GBP_PER_KWH * 100).toFixed(1)}p/kWh) —{' '}
+              {ORC_VERDICT}
             </p>
           </div>
 
@@ -85,7 +106,8 @@ export default function WhyNoTurbine() {
         </div>
 
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-8 md:p-10 rounded-3xl border border-gray-200/60">
-          <h3 className="text-2xl font-bold text-gray-900 mb-6">Heat-to-electricity, ranked honestly</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">Heat-to-electricity, ranked honestly</h3>
+          <p className="text-gray-500 text-sm mb-6">Typical efficiency ranges as commonly quoted, not outputs of our model.</p>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>

@@ -66,4 +66,12 @@ describe("build ID", () => {
     expect(computeBuildId(lf)).toBe(computeBuildId(root));
     expect(id).not.toBe(computeBuildId(lf));
   });
+
+  it("covers the TypeScript config, which can change the emitted code", () => {
+    const root = fixture();
+    const id = computeBuildId(root);
+    writeFileSync(join(root, "tsconfig.app.json"), '{"compilerOptions":{"useDefineForClassFields":true}}');
+    expect(listBuildInputs(root)).toContain("tsconfig.app.json");
+    expect(computeBuildId(root)).not.toBe(id);
+  });
 });

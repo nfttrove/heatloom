@@ -25,18 +25,23 @@ assumptions stated as constants, tested in `heatloom.test.ts`):
 - **Sand by temperature swing** — kg per kWh = 3600 / (0.8 × ΔT): 11 kg/kWh
   for the rig's 400 K swing, 60 kg/kWh for the Hybrid's 120 → 45 °C. At
   those temperatures a water tank needs about 17 kg/kWh.
-- **Standing loss** — τ = C / UA for an insulated cylinder. A house-scale
-  store holds **days, not seasons**, so no month uses more heat than it
-  collects.
+- **Standing loss** — τ = C / UA for an insulated cylinder (and twice the
+  U for the rig's hot store, since mineral wool conducts about twice as well
+  at 250–420 °C). A full 40 kWh Hybrid store loses half its *useful* heat in
+  about 5 days. It holds **days, not seasons**, so no month uses more heat
+  than it collects, and a day's heat is capped at what the store holds.
 - **Monthly shapes** — sunshine (December ≈ 0.3×, midsummer ≈ 1.6×) and
   heat demand (hot water plus heating degree days) replace a single winter
   factor.
 - **Savings you can actually bank** — PV counts only the share used at home
   (50% by default; a DIY install earns no export payment), heat counts only
   what meets each month's demand, valued at what it displaces (gas by
-  default; oil, heat pump or direct electric are options).
+  default; oil, heat pump or direct electric are options). Prices are
+  sourced: Ofgem's October–December 2026 cap for electricity and gas, a
+  September 2026 kerosene average for oil.
 - **Pessimistic case** — −10% sun and the low end of each efficiency band,
-  shown beside every central estimate.
+  shown beside every central estimate. Costs are not varied: the store's
+  £15/kWh is a floor.
 - **Rig costs from its own bill of materials** — the retired rig is priced
   from the Build Guide's parts list, not a guessed £/m².
 - **Toy balances** for the animated panels (Energy Flow, Demo) share the
@@ -45,8 +50,9 @@ assumptions stated as constants, tested in `heatloom.test.ts`):
 ## Site narrative
 
 The site leads with the Hybrid and shows its economics as they are: against
-gas, the PV half does most of the earning and the thermal half barely pays;
-against a heat pump or direct electric, the heat half matters more. The
+gas, the PV half does most of the earning and the thermal half takes several
+times longer to pay back; against direct electric heating, the heat half
+matters more. The
 original ORC electricity stage became ["Why we deleted our own
 turbine"](src/components/WhyNoTurbine.tsx) — a Carnot explainer. The
 registered claims are displayed as filed, with their hashes, in
@@ -82,7 +88,7 @@ The live site is published from Bolt, so merging here does not deploy it. To
 catch a live site that has fallen behind, every build stamps
 `<meta name="heatloom-build" content="…">` with a hash of the shipped source
 (`scripts/build-id.mjs`, ported from in-fini: paths and contents of `src/`,
-`public/` and the build config; tests excluded, line endings normalised,
+`public/`, the build config and tsconfig; tests excluded, line endings normalised,
 dependency versions deliberately not included). The scheduled `live-drift`
 workflow compares heatloom.com's stamp with `main` daily and fails, which
 emails the repo owner, when they differ. Run it on demand from the Actions

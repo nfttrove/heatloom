@@ -10,9 +10,11 @@ import {
   HYBRID_STORE_TOP_C,
   DEFAULT_HYBRID,
   storeHeatLoss,
+  usefulHeatHalfLifeDays,
 } from '../utils/heatloom';
 
 const DEFAULT_STORE = storeHeatLoss(DEFAULT_HYBRID.storeKWh);
+const USEFUL_HALF_LIFE_DAYS = usefulHeatHalfLifeDays(DEFAULT_STORE.timeConstantDays);
 
 /** A plain schematic: sunlight → collector → loop → sand store → home, with PV beside it. */
 function SystemDiagram() {
@@ -131,8 +133,8 @@ export default function Theory() {
             <h3 className="text-2xl font-bold text-gray-900 mb-6">Thermal Storage</h3>
             <p className="text-gray-600 leading-relaxed mb-6 text-lg">
               A layered granular core: dense basalt around the charge coil, quartz sand as the bulk, perlite to insulate.
-              It holds days of heat, not seasons — the default Hybrid store loses half its heat in about{' '}
-              {DEFAULT_STORE.halfLifeDays.toFixed(0)} days.
+              It holds days of heat, not seasons — the default Hybrid store, full, loses half its useful heat in about{' '}
+              {USEFUL_HALF_LIFE_DAYS.toFixed(0)} days.
             </p>
             <div className="space-y-4">
               <div className="flex items-center space-x-4 p-3 bg-gradient-to-r from-red-50 to-red-100 rounded-lg border border-red-200/50">

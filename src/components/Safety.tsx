@@ -1,11 +1,13 @@
-import { Shield, AlertCircle, CheckCircle, Wrench, Eye, Bell, Cog, Flame, Sun, Gauge, Weight } from 'lucide-react';
-import { storeHeatLoss, DEFAULT_HYBRID, HYBRID_STORE_TOP_C } from '../utils/heatloom';
+import { Shield, AlertCircle, CheckCircle, Wrench, Eye, Bell, Cog, Flame, Sun, Gauge, Weight, Thermometer } from 'lucide-react';
+import { storeHeatLoss, DEFAULT_HYBRID, HYBRID_STORE_TOP_C, RIG_STORE_TOP_C } from '../utils/heatloom';
 
 // The research rig's concentration (Theory) and a clear-sky direct beam.
 const CONCENTRATION = { low: 20, high: 40 };
 const CLEAR_SKY_DNI_KW_M2 = 0.8;
-// Saturation pressure of water (bar absolute) at the temperatures that matter here.
+// Saturation pressure of water (bar absolute, steam tables) at the temperatures that matter here.
 const STEAM_BAR_AT_250C = 39.7;
+const STEAM_BAR_AT_350C = 165.3;
+const WATER_CRITICAL_C = 374;
 const STEAM_BAR_AT_120C = 2.0;
 const DEFAULT_STORE = storeHeatLoss(DEFAULT_HYBRID.storeKWh);
 
@@ -18,7 +20,12 @@ const HAZARDS = [
   {
     icon: <Gauge className="w-6 h-6" />,
     title: 'Steam and pressure',
-    text: `Water in a coil inside a store hotter than 100 °C boils if the flow stops: at 250 °C trapped steam reaches about ${STEAM_BAR_AT_250C.toFixed(0)} bar, and even the Hybrid's ${HYBRID_STORE_TOP_C} °C store makes about ${STEAM_BAR_AT_120C.toFixed(0)} bar. Either keep water circuits out of the hot zone, or use pressure-rated parts with a relief valve sized for full boil-off — and fit a thermostatic mixing valve so taps can never deliver scalding water.`,
+    text: `Water boils wherever it meets a surface above 100 °C once the flow stops. Trapped in the rig's store it would reach about ${STEAM_BAR_AT_250C.toFixed(0)} bar at 250 °C and ${STEAM_BAR_AT_350C.toFixed(0)} bar at 350 °C, and the store runs to ${RIG_STORE_TOP_C} °C — past water's ${WATER_CRITICAL_C} °C critical point, beyond anything a DIY coil can hold. Keep water out of the rig's store entirely: take heat out through the oil loop and an external exchanger with its own temperature limit. The Hybrid's ${HYBRID_STORE_TOP_C} °C store makes about ${STEAM_BAR_AT_120C.toFixed(0)} bar: use pressure-rated parts and a relief valve sized for full boil-off, and a thermostatic mixing valve rated for the hottest water the coil can deliver — many are rated only to about 90 °C, so add a high-limit cutoff if the store runs hotter.`,
+  },
+  {
+    icon: <Thermometer className="w-6 h-6" />,
+    title: 'Stagnation (Hybrid tubes)',
+    text: 'When the store is full, the pump stops or the power fails, evacuated tubes keep absorbing sunlight with no flow and can pass 200 °C (the stagnation temperature is on the collector datasheet). The glycol boils and degrades and the loop pressure jumps. Size the expansion vessel and relief valve for stagnation, use high-temperature glycol, and consider a drainback loop that empties the collectors whenever the pump stops. Tubes cannot be defocused.',
   },
   {
     icon: <Flame className="w-6 h-6" />,
@@ -38,7 +45,7 @@ const SAFETY_FEATURES = [
     icon: <Shield className="w-7 h-7" />,
     box: 'bg-gradient-to-br from-red-400 to-red-600',
     dot: 'bg-red-500',
-    items: ['Relief valve sized for full boil-off', 'Expansion vessel for thermal expansion', 'Thermostatic mixing valve on hot water', 'Manual vent for maintenance'],
+    items: ['Relief valve sized for full boil-off', 'Expansion vessel sized for stagnation, or a drainback loop', 'Mixing valve rated for the hottest water the coil delivers', 'Manual vent for maintenance'],
   },
   {
     category: 'Hot loop and optics',

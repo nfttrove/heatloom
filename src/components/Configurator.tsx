@@ -160,7 +160,9 @@ export default function Configurator() {
                   ))}
                 </div>
                 <p className="text-gray-600 text-sm mt-2">
-                  Sizing on the annual average is how solar projects end up apologizing in December.
+                  Sizing on the annual average is how solar projects end up apologizing in December. December here uses
+                  southern England's tilted-panel sunshine shape; direct beam, which troughs need, falls further in a UK
+                  winter, so the rig's UK December figure is optimistic.
                 </p>
               </div>
 

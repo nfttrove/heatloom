@@ -9,7 +9,7 @@ export default function BuildGuide() {
     { title: "Collector Assembly", description: "Frame troughs, mount mirrors, align receiver tubes", icon: <Hammer className="w-5 h-5" /> },
     { title: "Storage Preparation", description: "Line vessel with ceramic fiber + VIP panels; pack layers in sequence", icon: <Package className="w-5 h-5" /> },
     { title: "Charge Coil Installation", description: "Manifold headers + parallel SS loops in basalt zone", icon: <Cog className="w-5 h-5" /> },
-    { title: "Use Coil Installation", description: "Centred in the core. Keep water out of the hot zone, or use pressure-rated parts with a relief valve (see Safety)", icon: <Wrench className="w-5 h-5" /> },
+    { title: "Heat Take-off", description: "No water coil inside the rig's hot store: take heat out through the oil loop to an external exchanger with its own temperature limit (see Safety)", icon: <Wrench className="w-5 h-5" /> },
     { title: "Thermosiphon Loop", description: "Install lift leg, check valve, expansion pot", icon: <CheckCircle className="w-5 h-5" /> },
     { title: "Instrumentation", description: "Install sensors at top, mid, wall positions", icon: <Cog className="w-5 h-5" /> },
     { title: "Control Wiring", description: "Connect Pi/ESP32 to motor driver, wind sensor, limit switches — plus a spring or gravity return that defocuses the trough when the power fails", icon: <Wrench className="w-5 h-5" /> }

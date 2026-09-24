@@ -8,6 +8,7 @@ import {
   heatFlowStep,
   hybridStoreTemperatureC,
   storeHeatLoss,
+  usefulHeatHalfLifeDays,
   type HeatFlowParams,
   type HeatFlowState,
 } from '../utils/heatloom';
@@ -16,7 +17,7 @@ import {
 const HOURS_PER_FRAME = 0.05;
 const PEAK_SUN_KW_M2 = 1.0;
 const CAPACITY_KWH = DEFAULT_HYBRID.storeKWh;
-const HALF_LIFE_DAYS = storeHeatLoss(CAPACITY_KWH).halfLifeDays;
+const HALF_LIFE_DAYS = usefulHeatHalfLifeDays(storeHeatLoss(CAPACITY_KWH).timeConstantDays);
 
 const one = (x: number) => x.toFixed(1);
 const two = (x: number) => x.toFixed(2);
@@ -69,7 +70,7 @@ export default function EnergyFlow() {
     ['Collected', sim.collectedKWh, 'text-orange-300'],
     ['Delivered', sim.deliveredKWh, 'text-blue-300'],
     ['Lost from store', sim.lostKWh, 'text-red-300'],
-    ['Parked (store full)', sim.dumpedKWh, 'text-yellow-300'],
+    ['Turned away (store full)', sim.dumpedKWh, 'text-yellow-300'],
     ['In the store', sim.storedKWh, 'text-purple-300'],
     ['Unmet demand', sim.unmetKWh, 'text-gray-300'],
   ];
@@ -152,7 +153,7 @@ export default function EnergyFlow() {
                 />
               </div>
               <p className="text-gray-400 text-xs mt-1">
-                ≈ {Math.round(storeC)} °C{storeFull ? ' · full: loop parked' : storeEmpty ? ' · below useful heat' : ''}
+                ≈ {Math.round(storeC)} °C{storeFull ? ' · full: tubes stagnate (see Safety)' : storeEmpty ? ' · below useful heat' : ''}
               </p>
             </div>
             <FlowArrow active={deliveredKW > 0} />
@@ -180,7 +181,7 @@ export default function EnergyFlow() {
               ))}
             </div>
             <p className="text-gray-400 text-xs mt-4">
-              Collected − (delivered + lost + parked + stored) = {two(Math.abs(books) < 0.005 ? 0 : books)} kWh. Nothing is
+              Collected − (delivered + lost + turned away + stored) = {two(Math.abs(books) < 0.005 ? 0 : books)} kWh. Nothing is
               created: heat that is neither used nor stored is lost, or never collected.
             </p>
           </div>
@@ -253,8 +254,8 @@ export default function EnergyFlow() {
               <h4 className="font-bold text-xl mb-3 text-orange-400">What this toy leaves out</h4>
               <p className="text-gray-300 leading-relaxed">
                 Real skies change by the minute and by the month; the Hybrid's headline numbers come from its monthly model,
-                not from this panel. The store here loses heat with the same time constant as that model — half in about{' '}
-                {Math.round(HALF_LIFE_DAYS)} days — which is why it smooths days, not seasons. The retired research rig
+                not from this panel. The store here loses heat with the same time constant as that model — a full store loses half its
+                useful heat in about {Math.round(HALF_LIFE_DAYS)} days — which is why it smooths days, not seasons. The retired research rig
                 added an ORC turbine after the store, turning about {Math.round(ORC_EFFICIENCY * 100)}% of its heat into
                 electricity:{' '}
                 <a href="#why-no-turbine" className="text-orange-300 underline hover:text-orange-200">

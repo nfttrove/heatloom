@@ -23,6 +23,9 @@ const TOP_FILES = [
   "vite.config.ts",
   "tailwind.config.js",
   "postcss.config.js",
+  "tsconfig.json",
+  "tsconfig.app.json",
+  "tsconfig.node.json",
 ];
 const TREES = ["src", "public"];
 const EXCLUDE = /\.test\.[cm]?[jt]sx?$/;

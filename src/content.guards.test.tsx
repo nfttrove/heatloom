@@ -19,7 +19,19 @@ const decode = (s: string) =>
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&amp;/g, "&");
-const TEXT = decode(HTML.replace(/<!-- -->/g, "").replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ");
+const toText = (html: string) => decode(html.replace(/<!-- -->/g, "").replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ");
+const TEXT = toText(HTML);
+/** One section's visible text, so a correct number elsewhere can't cover for a stale one here. */
+const section = (id: string) => {
+  const m = HTML.match(new RegExp(`<section id="${id}"[\\s\\S]*?</section>`));
+  if (!m) throw new Error(`no section #${id}`);
+  return toText(m[0]);
+};
+// Everything that ships, including text that only renders after a click and
+// attribute values (titles, aria-labels) that the first render strips.
+const SOURCE = Object.values(
+  import.meta.glob(["./components/*.tsx", "./App.tsx", "./utils/heatloom.ts"], { query: "?raw", import: "default", eager: true })
+).join("\n") as string;
 
 describe("claims the evidence does not support stay off the page", () => {
   // Each of these was on the live site before the 2026-09 honesty sweep.
@@ -50,8 +62,9 @@ describe("claims the evidence does not support stay off the page", () => {
     "cheapest component to oversize",
   ];
   for (const phrase of RETIRED) {
-    it(`does not say "${phrase}"`, () => {
+    it(`does not say "${phrase}", rendered or in the shipped source`, () => {
       expect(TEXT.toLowerCase()).not.toContain(phrase.toLowerCase());
+      expect(SOURCE.toLowerCase()).not.toContain(phrase.toLowerCase());
     });
   }
 
@@ -68,24 +81,37 @@ describe("claims the evidence does not support stay off the page", () => {
 describe("the page says what it must", () => {
   it("has a safety section covering each major hazard", () => {
     expect(HTML).toContain('id="safety"');
-    for (const h of ["Concentrated sunlight", "Steam and pressure", "Fire:", "Weight and hot surfaces", "Fail-safe defocus without power"]) {
-      expect(TEXT).toContain(h);
+    const safety = section("safety");
+    for (const h of ["Concentrated sunlight", "Steam and pressure", "critical point", "Stagnation", "drainback", "Fire:", "Weight and hot surfaces", "Fail-safe defocus without power"]) {
+      expect(safety).toContain(h);
     }
   });
 
   it("keeps the markers CI greps the bundle for", () => {
     // "Loss Budget" renders only after a recommendation, so check the source the bundle is built from.
-    const src = Object.values(import.meta.glob("./components/*.tsx", { query: "?raw", import: "default", eager: true })).join("\n");
     for (const m of ["Heat Loom Configurator", "Dark December", "Loss Budget", "The Hybrid", "deleted our own turbine", "numbers are on trial"]) {
-      expect(src).toContain(m);
+      expect(SOURCE).toContain(m);
     }
   });
 
-  it("quotes the default Hybrid's payback as the model computes it", () => {
-    const plan = hybridPlan(DEFAULT_HYBRID);
-    expect(TEXT).toContain(`${plan.economics.paybackYears.toFixed(1)}-Year Payback`);
-    expect(TEXT).toContain(formatGBP(plan.economics.annualSavingsGBP));
-    expect(TEXT).toContain(`${plan.economics.pessimisticPaybackYears.toFixed(1)} in the pessimistic case`);
+  it("quotes the default Hybrid's economics as the model computes them, in every section that states them", () => {
+    const e = hybridPlan(DEFAULT_HYBRID).economics;
+    const pay = e.paybackYears.toFixed(1);
+    const pess = e.pessimisticPaybackYears.toFixed(1);
+    const saves = formatGBP(e.annualSavingsGBP);
+    const hero = section("overview");
+    expect(hero).toContain(`${pay}-Year Payback`);
+    expect(hero).toContain(`saving about ${saves} a year`);
+    expect(hero).toContain(`a ${pay}-year payback, ${pess} in the pessimistic case`);
+    const roi = section("roi");
+    expect(roi).toContain(`Annual Savings ${saves}`);
+    expect(roi).toContain(`Payback Period ${pay} years`);
+    expect(roi).toContain(`${pess} in the pessimistic case`);
+    const hybrid = section("hybrid");
+    expect(hybrid).toContain(`${saves} `);
+    expect(hybrid).toContain(`${pay} yr (${pess} yr)`);
+    const trial = section("on-trial");
+    expect(trial).toContain(`saves about ${saves} a year, a ${pay}-year payback`);
   });
 
   it("states how far the current model falls below the registered claim", () => {

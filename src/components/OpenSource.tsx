@@ -6,7 +6,7 @@ const REPO = 'https://github.com/nfttrove/heatloom';
 const HAVE = [
   'This website and its tested engineering module (MIT)',
   'The research rig\'s bill of materials and build steps (Build Guide)',
-  'The loss chains, monthly model and every cost assumption, with sources',
+  'The loss chains, monthly model and every assumption, stated in code (with sources where we have them)',
   'Pre-registered production claims in the In Fini registry (On Trial)',
 ];
 const NOT_YET = [

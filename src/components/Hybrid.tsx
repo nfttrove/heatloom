@@ -5,6 +5,12 @@ import {
   HybridInput,
   HeatSource,
   HEAT_SOURCES,
+  MONTHS,
+  ELECTRICITY_GBP_PER_KWH,
+  GAS_GBP_PER_KWH,
+  BOILER_EFFICIENCY,
+  STORE_GBP_PER_KWH,
+  PV_PANEL_GBP_PER_W,
   DEFAULT_HYBRID,
   HYBRID_STORE_TOP_C,
   HYBRID_STORE_USEFUL_MIN_C,
@@ -55,14 +61,22 @@ function CoverageCard({
 
 const years = (x: number) => (isFinite(x) && x < 200 ? `${x.toFixed(1)} yr` : 'never');
 
-const lowerFirst = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
+/** "May–Sep" for a contiguous run of months, else a list. */
+function monthSpan(months: string[]): string {
+  if (months.length === 0) return 'no month';
+  if (months.length === 1) return months[0];
+  const idx = months.map((m) => MONTHS.indexOf(m as (typeof MONTHS)[number]));
+  const contiguous = idx.every((v, k) => k === 0 || v === idx[k - 1] + 1);
+  return contiguous ? `${months[0]}–${months[months.length - 1]}` : months.join(', ');
+}
 
 export default function Hybrid() {
   const [cfg, setCfg] = useState<HybridInput>({ ...DEFAULT_HYBRID, pvSelfUse: 0.5, heatSource: 'gas' });
   const set = (patch: Partial<HybridInput>) => setCfg((c) => ({ ...c, ...patch }));
   const plan = hybridPlan(cfg);
-  const heatLabel = lowerFirst(HEAT_SOURCES[cfg.heatSource ?? 'gas'].label);
+  const heatPhrase = HEAT_SOURCES[cfg.heatSource ?? 'gas'].phrase;
   const heatSurplus = plan.thermal.annualKWh - plan.thermal.usedKWh;
+  const surplusMonths = plan.monthly.filter((m) => m.heatCollectedKWhPerDay > m.heatUsedKWhPerDay + 1e-9).map((m) => m.month);
   const e = plan.economics;
   const pvPayback = e.pvCostGBP / Math.max(e.electricSavingsGBP, 1);
   const thermalPayback = e.thermalCostGBP / Math.max(e.heatSavingsGBP, 1);
@@ -79,7 +93,7 @@ export default function Hybrid() {
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">The Hybrid — the one we'd actually build</h2>
           <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto font-light">
             PV for electrons, evacuated-tube collectors + a sand store for heat. Heat Loom minus its weakest link
-            (the ORC), plus bought solar panels — because no garage machine beats ~£0.30/W silicon.
+            (the ORC), plus bought solar panels — because no garage machine beats ~£{PV_PANEL_GBP_PER_W.toFixed(2)}/W silicon.
           </p>
         </div>
 
@@ -107,8 +121,8 @@ export default function Hybrid() {
                 ))}
               </select>
             </div>
-            <Slider label="Sun on the collector (yearly mean)" value={cfg.dniAnnual} min={1} max={8} step={0.5} unit="kWh/m²/day" onChange={(v) => set({ dniAnnual: v })} />
-            <p className="text-gray-500 text-xs -mt-3">Global sunlight on a south-facing tilt — tubes use diffuse light too. Southern England ≈ 3.</p>
+            <Slider label="Sunshine (yearly mean)" value={cfg.dniAnnual} min={1} max={8} step={0.5} unit="kWh/m²/day" onChange={(v) => set({ dniAnnual: v })} />
+            <p className="text-gray-500 text-xs -mt-3">Global sunlight on a south-facing tilt, for the panels and the tubes (tubes use diffuse light too). Southern England ≈ 3.</p>
             <div className="pt-4 border-t border-gray-100 space-y-6">
               <div className="flex items-center space-x-3">
                 <Sun className="w-5 h-5 text-blue-600" />
@@ -124,10 +138,12 @@ export default function Hybrid() {
               {Math.round(plan.thermal.sandMassKg).toLocaleString('en-GB')} kg of dry sand ({plan.thermal.storeVolumeM3.toFixed(1)} m³) —
               about {formatGBP(plan.thermal.mediaCostGBP)} of aggregate; the vessel, insulation and exchanger are the real
               cost. A water tank doing the same job weighs {Math.round(plan.thermal.waterMassKg).toLocaleString('en-GB')} kg.
-              Either way it holds days, not seasons: half its heat is gone in about{' '}
+              Either way it holds days, not seasons: full, it loses half its useful heat in about{' '}
               {plan.thermal.storeHalfLifeDays.toFixed(0)} days behind 150 mm of mineral wool. It holds{' '}
-              {plan.thermal.storeDaysOfPeakCollection.toFixed(1)} days of your best month's collection; past one or two,
-              a bigger store adds cost, not coverage.
+              {plan.thermal.storeDaysOfPeakCollection.toFixed(1)} days of your best month's collection
+              {plan.thermal.storeDaysOfPeakCollection < 1
+                ? ' — less than a sunny day, so it caps how much heat reaches the house; a bigger store would add coverage.'
+                : '; past one or two, a bigger store adds cost, not coverage.'}
             </p>
           </div>
 
@@ -146,7 +162,7 @@ export default function Hybrid() {
                 color="text-red-600"
                 note={
                   heatSurplus >= 1
-                    ? `Of ${Math.round(plan.thermal.annualKWh).toLocaleString('en-GB')} kWh collected, ${Math.round(plan.thermal.usedKWh).toLocaleString('en-GB')} meet demand; the rest arrives in summer, when the house needs little heat.`
+                    ? `Of ${Math.round(plan.thermal.annualKWh).toLocaleString('en-GB')} kWh collected, ${Math.round(plan.thermal.usedKWh).toLocaleString('en-GB')} meet demand; the rest is surplus in ${monthSpan(surplusMonths)}, when the tubes collect more than the house${plan.thermal.storeDaysOfPeakCollection < 1 ? ' can take through the store' : ' needs'}.`
                     : `All ${Math.round(plan.thermal.annualKWh).toLocaleString('en-GB')} kWh collected meets demand, even in summer — the collector is small next to the house's heat needs.`
                 }
               />
@@ -212,11 +228,11 @@ export default function Hybrid() {
               </div>
               <p className="text-gray-600 text-xs mt-4 leading-relaxed">
                 The December column is the honesty column: no UK tier retires your boiler, and all three keep the grid.
-                Against a {heatLabel}, the starter's heat half ({formatGBP(starter.thermalCostGBP)}) earns{' '}
+                Against {heatPhrase}, the starter's heat half ({formatGBP(starter.thermalCostGBP)}) earns{' '}
                 {formatGBP(starter.heatSavingsGBP)} a year and its PV half ({formatGBP(starter.pvCostGBP)}) earns{' '}
-                {formatGBP(starter.electricSavingsGBP)} — {starter.heatSavingsGBP < starter.electricSavingsGBP / 2
-                  ? 'the panels do the paying; the collector and store pay back slowly unless they displace expensive heat.'
-                  : 'at this heat price the collector and store pull their weight.'}
+                {formatGBP(starter.electricSavingsGBP)}: the heat half pays for itself in{' '}
+                {years(starter.thermalCostGBP / Math.max(starter.heatSavingsGBP, 1))}, the panels in{' '}
+                {years(starter.pvCostGBP / Math.max(starter.electricSavingsGBP, 1))}.
               </p>
             </div>
 
@@ -241,7 +257,10 @@ export default function Hybrid() {
               <p className="text-gray-600 text-sm mt-5 leading-relaxed">
                 Savings count only PV used at home ({Math.round(plan.pv.selfUse * 100)}%, exports at £0) and heat that meets
                 each month's demand, with a monthly UK sun and heating shape; the store never carries summer into winter.
-                Heat is valued at what a {heatLabel} costs. Lithium would cost {formatGBP(cfg.storeKWh * LITHIUM_GBP_PER_KWH)} for
+                Heat is valued at what {heatPhrase} costs, at Ofgem's October–December 2026 cap prices (electricity{' '}
+                {(ELECTRICITY_GBP_PER_KWH * 100).toFixed(1)}p, gas {(GAS_GBP_PER_KWH * 100).toFixed(1)}p through a{' '}
+                {Math.round(BOILER_EFFICIENCY * 100)}% boiler). The store's {formatGBP(STORE_GBP_PER_KWH)}/kWh is a floor,
+                and the pessimistic case varies sunshine and efficiency, not cost. Lithium would cost {formatGBP(cfg.storeKWh * LITHIUM_GBP_PER_KWH)} for
                 the same number of kWh — but electrical kWh, each worth several kWh of heat. The registered claim (On Trial)
                 is annual production, not these savings.
               </p>
