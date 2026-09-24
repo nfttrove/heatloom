@@ -26,7 +26,7 @@ const STEPS = [
   { title: 'Wire the microinverters', text: 'One microinverter per panel or pair, joined by the AC trunk cable, through an AC isolator. A registered electrician connects it to its own RCBO and certifies it.', icon: <Wrench className="w-5 h-5" /> },
   { title: 'Build the loom', text: 'Current clamp on the meter tails and an AC voltage adapter (together they tell import from export), ESP32, solid-state relay on its heatsink, tank sensor and 5 V supply, in one ventilated enclosure.', icon: <Cpu className="w-5 h-5" /> },
   { title: 'Connect it to the immersion', text: "The loom switches the immersion heater's supply, after a double-pole isolator and with the tank's thermostat left in circuit. This is mains work on a 3 kW circuit: the electrician connects and tests it.", icon: <Hammer className="w-5 h-5" /> },
-  { title: 'Commission', text: "On a sunny day with the tank cool, the meter should show almost no export while the tank heats. Set the boiler to heat water in the evening, after the sun, so the panels get first go, and run a weekly 60 °C hygiene cycle (an immersion timer does this until the loom's firmware can).", icon: <Droplets className="w-5 h-5" /> },
+  { title: 'Commission', text: "With a diverter running (the loom, or a bought one meanwhile), on a sunny day with the tank cool the meter should show almost no export while the tank heats. Set the boiler to heat water in the evening, after the sun, so the panels get first go, and run a weekly 60 °C hygiene cycle (an immersion timer does this until the loom's firmware can).", icon: <Droplets className="w-5 h-5" /> },
 ];
 
 export default function BuildGuide() {

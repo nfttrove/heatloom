@@ -183,6 +183,16 @@ describe("calculator copy in non-default states", () => {
     expect(render({ pvKwp: 3.6 })).not.toContain("G99");
   });
 
+  it("shows the share of output the model actually uses, not just the slider", () => {
+    for (const initial of [{}, { pvSelfUse: 0.8 }, { pvKwp: 8 }, { pvKwp: 2, pvSelfUse: 0.2 }]) {
+      const l = loomPlan({ ...DEFAULT_LOOM, ...initial });
+      expect(render(initial)).toContain(`it uses ${Math.round((100 * l.pv.houseKWh) / l.pv.annualKWh)}% of this build's output`);
+    }
+    const half = loomPlan({ ...DEFAULT_LOOM, pvSelfUse: 0.5 });
+    expect(section("numbers")).toContain(`Someone is home in the day (${Math.round((100 * half.pv.houseKWh) / half.pv.annualKWh)}% of the output used at home`);
+    expect(section("numbers")).not.toContain("half the output");
+  });
+
   it("renders no broken numbers at the slider extremes", () => {
     for (const initial of [
       { pvKwp: 0.4, pvSelfUse: 0.2, sun: 1, electricKWhPerDay: 2, hotWaterKWhPerDay: 2, tankKWh: 6 },

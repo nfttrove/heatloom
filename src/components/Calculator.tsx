@@ -84,8 +84,9 @@ export default function Calculator({ initial }: { initial?: Partial<LoomInput> }
             <Slider id="calc-pv" label="Solar panels" value={cfg.pvKwp} min={0.4} max={8} step={0.4}
               display={`${cfg.pvKwp.toFixed(1)} kWp`} hint={`${Math.round((cfg.pvKwp * 1000) / 400)} × 400 W panels, about ${Math.round((cfg.pvKwp * 1000) / 400) * 2} m² of roof.`}
               onChange={(v) => set({ pvKwp: Math.round(v * 10) / 10 })} />
-            <Slider id="calc-selfuse" label="Share used as it's made" value={cfg.pvSelfUse} min={0.2} max={0.8} step={0.05}
-              display={pct(cfg.pvSelfUse)} hint="Higher if someone is home in the day; 30–40% is typical without a battery."
+            <Slider id="calc-selfuse" label="Daytime use" value={cfg.pvSelfUse} min={0.2} max={0.8} step={0.05}
+              display={pct(cfg.pvSelfUse)}
+              hint={`How much of the output you'd use as it's made — higher if someone is home in the day. The house can't use more than 60% of its day while the sun is up, so over the year it uses ${pct(plan.pv.houseKWh / Math.max(plan.pv.annualKWh, 1e-9))} of this build's output.`}
               onChange={(v) => set({ pvSelfUse: v })} />
             <div>
               <label htmlFor="calc-controller" className="block font-bold text-gray-900 mb-2">Sending the spare to the tank</label>

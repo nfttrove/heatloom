@@ -16,7 +16,8 @@ import {
   formatGBP,
 } from '../utils/heatloom';
 
-const BASE = loomPlan(DEFAULT_LOOM).economics;
+const BASE_PLAN = loomPlan(DEFAULT_LOOM);
+const BASE = BASE_PLAN.economics;
 const p = (x: number) => `${(x * 100).toFixed(1)}p`;
 const yrs = (x: number) => `${x.toFixed(1)} years`;
 
@@ -24,7 +25,7 @@ const yrs = (x: number) => `${x.toFixed(1)} years`;
 const VARIANTS = [
   { label: 'You heat water with an immersion heater today (standard tariff)', plan: loomPlan({ ...DEFAULT_LOOM, heatSource: 'electric' }) },
   { label: 'You heat water with oil', plan: loomPlan({ ...DEFAULT_LOOM, heatSource: 'oil' }) },
-  { label: 'Someone is home in the day (half the output used as it is made)', plan: loomPlan({ ...DEFAULT_LOOM, pvSelfUse: 0.5 }) },
+  { label: 'Someone is home in the day', plan: loomPlan({ ...DEFAULT_LOOM, pvSelfUse: 0.5 }) },
   { label: `A bought diverter instead of the loom (about ${formatGBP(BOUGHT_DIVERTER_GBP)} fitted, against the loom's ${formatGBP(LOOM_CONTROLLER_PARTS_GBP)} of parts)`, plan: loomPlan({ ...DEFAULT_LOOM, controller: 'bought' }) },
   { label: 'Panels only, no loom', plan: loomPlan({ ...DEFAULT_LOOM, controller: 'none' }) },
 ];
@@ -69,7 +70,11 @@ export default function OurNumbers() {
             <ul className="space-y-3">
               {VARIANTS.map((v) => (
                 <li key={v.label} className="flex justify-between gap-4 text-sm md:text-base">
-                  <span className="text-gray-700">{v.label}</span>
+                  <span className="text-gray-700">
+                    {v.label}
+                    {v.label === 'Someone is home in the day' &&
+                      ` (${Math.round((100 * v.plan.pv.houseKWh) / v.plan.pv.annualKWh)}% of the output used at home, against ${Math.round((100 * BASE_PLAN.pv.houseKWh) / BASE_PLAN.pv.annualKWh)}%)`}
+                  </span>
                   <span className="font-bold text-green-700 whitespace-nowrap">{yrs(v.plan.economics.paybackYears)}</span>
                 </li>
               ))}
