@@ -89,15 +89,10 @@ export default function OurNumbers() {
               <h3 className="text-2xl font-bold mb-3">Check our working</h3>
               <p className="text-gray-300 leading-relaxed mb-6">
                 The model is open source and covered by automated tests, and every figure on this page is computed from it.
-                Earlier Heat Loom designs have predictions filed in the public In Fini claim registry.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <a href={REPO_MODEL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center space-x-2 px-6 py-3 bg-white text-gray-900 rounded-xl font-semibold hover:bg-gray-100">
                   <span>Read the model</span>
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-                <a href="https://in-fini.com/?tab=registry" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center space-x-2 px-6 py-3 border-2 border-white/60 text-white rounded-xl font-semibold hover:bg-white/10">
-                  <span>See the registry</span>
                   <ExternalLink className="w-4 h-4" />
                 </a>
               </div>

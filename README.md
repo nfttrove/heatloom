@@ -71,8 +71,9 @@ Hero · How it works (diagram, why a tank) · The build (parts list, steps,
 tubes add-on) · Your numbers (calculator) · Safety · How we got these
 numbers · Open source. Earlier designs — the concentrating research rig with
 a sand store and an ORC turbine, and the tubes-plus-store "Hybrid" — remain
-in the model (and its tests) because the In Fini registry's filed claims
-were computed from them; they are no longer on the page.
+in the model (and its tests) because claims once filed in the In Fini
+registry (now offline) were computed from them; they are no longer on the
+page.
 
 ## Honesty policy
 

@@ -70,6 +70,7 @@ describe("claims the evidence does not support stay off the page", () => {
     "runs the open-source firmware", // the loom's firmware is not written yet
     "not published yet",
     "every spare unit", // some spare is still exported when the tank is full
+    "In Fini claim registry", // its database was shut down; the registry is offline
   ];
   for (const phrase of RETIRED) {
     it(`does not say "${phrase}", rendered or in the shipped source`, () => {
@@ -141,6 +142,10 @@ describe("page structure", () => {
 
   it("has no dead buttons pretending to be links", () => {
     expect(HTML).not.toMatch(/href="#"/);
+  });
+
+  it("does not link to the In Fini registry, which is offline", () => {
+    expect(HTML).not.toContain("in-fini.com/?tab=registry");
   });
 
   it("opens external links safely", () => {
